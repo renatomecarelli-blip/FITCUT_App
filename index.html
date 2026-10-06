@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#0b1020" />
+<link rel="manifest" href="manifest.webmanifest" />
+<title>FITCUT • Gym & Diet</title>
+<style>
+:root{--bg:#07101d;--card:#0e192a;--card2:#132338;--text:#f4f7fb;--muted:#8ea0b8;--line:#263650;--accent:#63e6be;--accent2:#7aa7ff;--danger:#ff6b6b;--shadow:0 16px 45px rgba(0,0,0,.35);--radius:22px}
+*{box-sizing:border-box}html,body{margin:0;background:radial-gradient(1200px 600px at 15% -10%,#14284a 0,#07101d 52%);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}body{min-height:100vh}
+header{position:sticky;top:0;z-index:20;backdrop-filter:blur(16px);background:rgba(7,16,29,.82);border-bottom:1px solid rgba(255,255,255,.05)}
+.top{max-width:900px;margin:auto;padding:16px 18px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-weight:900;letter-spacing:.08em;font-size:14px}.brand span{color:var(--accent)}.daytitle{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+main{max-width:900px;margin:0 auto;padding:14px 16px 96px}.hero{background:linear-gradient(145deg,rgba(99,230,190,.13),rgba(122,167,255,.08));border:1px solid rgba(99,230,190,.18);border-radius:28px;padding:20px;box-shadow:var(--shadow);margin:8px 0 16px}.hero h1{margin:0 0 6px;font-size:31px;line-height:1}.hero p{margin:0;color:var(--muted);max-width:720px}.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.pill{padding:8px 11px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line);font-size:12px}.grid{display:grid;gap:12px}.exercise{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.02));border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:0 10px 26px rgba(0,0,0,.18)}.ex-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.ex-name{font-size:18px;font-weight:850}.tag{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:.08em}.target{font-size:12px;color:var(--muted);margin-top:4px}.meta{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.mini{font-size:12px;color:#c9d3e4;background:rgba(255,255,255,.05);padding:7px 9px;border-radius:10px}.cue{font-size:13px;color:#c2cede;line-height:1.4;border-left:3px solid var(--accent);padding-left:10px;margin:9px 0 12px}.timer-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}.timer{font-variant-numeric:tabular-nums;font-size:44px;font-weight:950;letter-spacing:.04em;line-height:1}.timer.active{color:var(--accent)}.timer.done{color:var(--accent2)}.btns{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.btn{border:1px solid var(--line);background:var(--card2);color:var(--text);padding:10px 12px;border-radius:12px;font-weight:750;cursor:pointer}.btn:active{transform:scale(.98)}.btn.primary{background:var(--accent);color:#052319;border-color:transparent}.btn.alt{background:transparent}.btn.danger{color:#ffd2d2;border-color:rgba(255,107,107,.32)}.restbar{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}.restbar input{width:90px;background:#091424;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:9px;font-size:16px;font-weight:800}.restbar label{font-size:12px;color:var(--muted)}.check{display:flex;gap:7px;align-items:center;margin-top:12px;flex-wrap:wrap}.set{width:38px;height:34px;border-radius:10px;border:1px solid var(--line);background:#0a1525;color:#8ea0b8;font-weight:900;cursor:pointer}.set.done{background:rgba(99,230,190,.18);color:var(--accent);border-color:rgba(99,230,190,.38)}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(7,16,29,.94);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:8px max(8px,env(safe-area-inset-left)) calc(8px + env(safe-area-inset-bottom))}.navin{max-width:900px;margin:auto;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.navbtn{background:none;border:0;color:var(--muted);padding:9px 4px;border-radius:13px;font-size:11px;font-weight:800}.navbtn.active{background:rgba(255,255,255,.06);color:var(--text)}
+.tabs{display:flex;gap:8px;overflow:auto;padding:2px 0 12px}.tab{white-space:nowrap}.section-title{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.11em;margin:18px 0 9px}.nutrition-card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px}.meal{padding:13px 0;border-bottom:1px solid rgba(255,255,255,.05)}.meal:last-child{border-bottom:0}.meal h4{margin:0 0 5px}.meal p{margin:0;color:#c1cddd;font-size:13px;line-height:1.5}.macrogrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.macro{background:#0a1525;border:1px solid var(--line);padding:10px;border-radius:12px}.macro b{display:block;font-size:18px}.macro span{font-size:11px;color:var(--muted)}
+.form{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.form label{font-size:12px;color:var(--muted)}.form input,.form select{width:100%;margin-top:5px;background:#091424;border:1px solid var(--line);color:var(--text);border-radius:12px;padding:11px;font-size:15px}.full{grid-column:1/-1}.note{background:rgba(122,167,255,.08);border:1px solid rgba(122,167,255,.18);padding:12px;border-radius:14px;color:#c7d5ea;font-size:12px;line-height:1.45}.warn{background:rgba(255,193,7,.07);border:1px solid rgba(255,193,7,.2);padding:12px;border-radius:14px;color:#ecd8a4;font-size:12px;line-height:1.45}.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.kpi>div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px}.kpi b{font-size:24px}.kpi span{display:block;color:var(--muted);font-size:11px;margin-top:3px}.empty{padding:32px 10px;text-align:center;color:var(--muted)}.small{font-size:12px;color:var(--muted)}
+@media(max-width:640px){main{padding-inline:12px}.hero h1{font-size:28px}.timer{font-size:39px}.macrogrid{grid-template-columns:repeat(2,1fr)}.kpi{grid-template-columns:1fr 1fr}.form{grid-template-columns:1fr}.full{grid-column:auto}.timer-row{grid-template-columns:1fr}.btns{justify-content:flex-start}.set{width:36px}}
+</style>
+</head>
+<body>
+<header><div class="top"><div><div class="brand">FIT<span>CUT</span></div><div class="daytitle" id="dayLabel">DAY 1</div></div><div class="small" id="saveState">Salvataggio automatico</div></div></header>
+<main id="app"></main>
+<nav><div class="navin"><button class="navbtn active" data-view="workout">GYM</button><button class="navbtn" data-view="diet">DIETA</button><button class="navbtn" data-view="progress">PROGRESSI</button><button class="navbtn" data-view="settings">SETUP</button></div></nav>
+<script>
+const PLAN={
+1:{name:'PUSH + QUAD + CORE',focus:'Petto, spalle, tricipiti + quadricipiti',ex:[
+['Hack squat','Quadricipiti / glutei','3','6-10',120,'Scendi controllato, ginocchia seguono la punta dei piedi, spingi tutta la pedana.'],
+['Panca piana','Petto / tricipiti','3','6-10',120,'Scapole stabili, piedi saldi, traiettoria controllata.'],
+['Chest press inclinata','Petto alto','2','8-12',90,'Porta i gomiti in una traiettoria naturale e chiudi senza perdere controllo.'],
+['Leg extension','Quadricipiti','2','10-15',75,'Pausa breve in alto, niente slancio.'],
+['Alzate laterali ai cavi','Deltoide laterale','3','12-20',60,'Movimento pulito, spalla lontana dall’orecchio.'],
+['Pushdown cavo','Tricipiti','3','8-12',75,'Gomiti fermi, estendi fino alla contrazione completa.'],
+['Push-up','Petto / tricipiti','2','8-15',75,'Corpo in linea, petto verso il pavimento.'],
+['Calf raise alla macchina','Polpacci','3','8-15',60,'Massima escursione controllata.'],
+['Leg raise alla sbarra','Addome','3','8-15',75,'Retroversione del bacino in alto, non solo slancio delle gambe.']
+]},
+2:{name:'PULL + CATENA POSTERIORE + CORE',focus:'Dorso, bicipiti + femorali / glutei',ex:[
+['Romanian deadlift','Femorali / glutei','3','6-10',135,'Anca indietro, schiena neutra, bilanciere vicino alle gambe.'],
+['Trazioni assistite o libere','Dorsali / bicipiti','3','5-10',120,'Parti dalle scapole, porta il petto verso la sbarra senza oscillare.'],
+['Rematore chest-supported','Dorso alto / dorsali','3','8-12',105,'Petto appoggiato, tira con i gomiti e controlla il ritorno.'],
+['Leg curl sdraiato','Femorali','3','10-15',75,'Stringi forte in chiusura senza staccare il bacino.'],
+['Rear delt fly ai cavi','Deltoide posteriore','2','12-20',60,'Braccia morbide, movimento aperto e corto.'],
+['Curl manubri su panca','Bicipiti','3','8-12',75,'Gomiti stabili, niente oscillazioni.'],
+['Curl hammer','Brachiale / avambraccio','2','10-15',60,'Polsi neutri, salita senza slancio.'],
+['Calf raise seduto','Soleo / polpacci','2','10-15',60,'Pausa in allungamento e in chiusura.'],
+['Dragon flag - progressione','Core','2','4-8',90,'Usa progressione adatta: tuck, negativa o completa. Controllo assoluto.']
+]},
+3:{name:'GAMBE + UPPER + CORE',focus:'Gambe complete + petto e dorso',ex:[
+['Hack squat','Quadricipiti / glutei','3','8-12',120,'Stessa tecnica del giorno 1, volume moderato.'],
+['Leg press','Quadricipiti / glutei','2','10-15',90,'Profondità controllata senza staccare il bacino.'],
+['Leg curl seduto','Femorali','2','10-15',75,'Mantieni tensione continua.'],
+['Chest press','Petto','3','8-12',90,'Spinta stabile, fermati prima di perdere assetto.'],
+['Lat machine presa neutra','Dorsali','3','8-12',90,'Pensa a portare i gomiti verso i fianchi.'],
+['Push-up piedi rialzati','Petto alto / tricipiti','2','8-15',75,'Corpo in linea, discesa controllata.'],
+['Rematore al cavo','Dorso','2','10-15',75,'Non trasformarlo in un movimento di bicipiti.'],
+['Calf raise in piedi','Polpacci','3','10-15',60,'Pausa in alto, completo allungamento.'],
+['Ab wheel','Addome','3','6-12',90,'Costole chiuse e bacino stabile; accorcia la ROM se inarchi la schiena.']
+]},
+4:{name:'UPPER + LEGS + CORE',focus:'Richiamo di tutto il corpo + gambe',ex:[
+['Hack squat','Quadricipiti / glutei','2','6-10',120,'Serie pesanti ma pulite, 1-2 ripetizioni dal cedimento.'],
+['Leg extension','Quadricipiti','2','12-15',60,'Contrazione forte e controllo.'],
+['Leg curl','Femorali','2','12-15',60,'Non accelerare la fase negativa.'],
+['Panca inclinata manubri','Petto / deltoide anteriore','3','6-10',105,'Scapole stabili, discesa controllata.'],
+['Pull-up o lat machine','Dorsali','2','6-10',105,'Petto alto, niente slancio.'],
+['Rematore unilaterale al cavo','Dorso','3','8-12',75,'Tira verso l’anca per enfatizzare il dorsale.'],
+['Alzate laterali manubri','Deltoide laterale','3','12-20',60,'Poco peso, tanta precisione.'],
+['Superset curl + pushdown','Braccia','2+2','10-15',60,'Alterna bicipiti e tricipiti, recupero 60 s dopo la coppia.'],
+['Hanging knee/leg raise','Addome','3','10-15',75,'Niente slancio; porta il bacino verso il torace.']
+]}
+};
+const DIETS=[
+{title:'A • MEDITERRANEA',kcal:2150,protein:150,carbs:235,fat:65,meals:[
+['Colazione','250 g yogurt greco + 40 g avena + 1 banana + cannella','~400 kcal'],
+['Pranzo','180 g pollo + 80 g riso basmati a crudo + verdure + 10 g EVO','~620 kcal'],
+['Spuntino','200 g skyr + 1 frutto + 15 g mandorle','~260 kcal'],
+['Cena','200 g merluzzo/salmone alternati + 300 g patate + verdure + 10 g EVO','~560 kcal'],
+['Quota libera','2 Dolciando Choco Cookies oppure 15-20 g cioccolato fondente','~150-200 kcal']
+]},
+{title:'B • VELOCE / LAVORO',kcal:2200,protein:145,carbs:240,fat:70,meals:[
+['Colazione','2 uova + 200 g albumi + 70 g pane + 1 frutto','~450 kcal'],
+['Pranzo','1 piadina integrale grande + 160 g tacchino + 40 g formaggio fresco light + insalata','~600 kcal'],
+['Spuntino','Barretta proteica + caffè + 1 frutto','~250 kcal'],
+['Cena','200 g manzo magro + 80 g pasta a crudo + pomodoro + verdure + 10 g EVO','~680 kcal'],
+['Quota libera','1-2 biscotti oppure piccolo dessert','~120-180 kcal']
+]},
+{title:'C • FLESSIBILE / PIZZA',kcal:2200,protein:145,carbs:245,fat:68,meals:[
+['Colazione','250 ml latte + 50 g cereali semplici + 170 g skyr','~390 kcal'],
+['Pranzo','180 g pollo/tacchino + 70 g pasta a crudo + verdure + 10 g EVO','~560 kcal'],
+['Spuntino','Yogurt greco + frutto','~180 kcal'],
+['Cena','Pizza una volta/settimana: margherita/prosciutto e funghi/pizza con salsiccia in porzione normale; acqua','~650-850 kcal'],
+['Regola','Quel giorno niente digiuno e niente cardio punitivo. Il resto dei pasti resta semplice.','']
+]}
+];
+let state=JSON.parse(localStorage.getItem('fitcut_state')||'null')||{view:'workout',day:1,settings:{defaultRest:90,sound:true,step:15},checks:{},weights:[],waists:[]};
+let timers={};
+function persist(){localStorage.setItem('fitcut_state',JSON.stringify(state));document.getElementById('saveState').textContent='Salvato '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});}
+function key(di,ei){return di+'-'+ei}
+function formatTime(s){s=Math.max(0,Math.round(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
+function playBeep(){if(!state.settings.sound)return;try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=new C();const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=880;g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.5,c.currentTime+.03);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.38);o.connect(g).connect(c.destination);o.start();o.stop(c.currentTime+.4)}catch(e){}}
+function setTimer(di,ei,seconds){clearInterval(timers[key(di,ei)]?.id);const ex=PLAN[di].ex[ei];timers[key(di,ei)]={end:Date.now()+seconds*1000,total:seconds,id:setInterval(()=>tick(di,ei),250)};tick(di,ei)}
+function tick(di,ei){const t=timers[key(di,ei)];if(!t)return;const left=Math.max(0,(t.end-Date.now())/1000);const el=document.querySelector(`[data-timer="${key(di,ei)}"]`);if(el){el.textContent=formatTime(left);el.classList.toggle('active',left>0);el.classList.toggle('done',left===0)}if(left<=0){clearInterval(t.id);delete timers[key(di,ei)];playBeep();}}
+function startRest(di,ei){const input=document.querySelector(`[data-rest="${key(di,ei)}"]`);const sec=Math.max(15,Number(input?.value||state.settings.defaultRest));setTimer(di,ei,sec)}
+function resetRest(di,ei){clearInterval(timers[key(di,ei)]?.id);delete timers[key(di,ei)];const el=document.querySelector(`[data-timer="${key(di,ei)}"]`);if(el)el.textContent=formatTime(Number(document.querySelector(`[data-rest="${key(di,ei)}"]`)?.value||state.settings.defaultRest))}
+function changeRest(di,ei,delta){const input=document.querySelector(`[data-rest="${key(di,ei)}"]`);input.value=Math.max(15,Number(input.value)+delta);resetRest(di,ei)}
+function setDone(di,ei,set){const k=key(di,ei);state.checks[k]=state.checks[k]||[];state.checks[k][set]=!state.checks[k][set];persist();render()}
+function completeSet(di,ei){const ex=PLAN[di].ex[ei];const k=key(di,ei);state.checks[k]=state.checks[k]||[];let idx=state.checks[k].findIndex(v=>!v);if(idx<0)idx=0;state.checks[k][idx]=true;persist();render();startRest(di,ei)}
+function renderWorkout(){const d=PLAN[state.day];document.getElementById('dayLabel').textContent='DAY '+state.day+' • '+d.name;return `<section class="hero"><h1>${d.name}</h1><p>${d.focus}. Quattro sedute, gambe presenti ogni giorno e core quotidiano. Obiettivo: perdere grasso mantenendo forza e massa muscolare.</p><div class="pills"><span class="pill">4 giorni/settimana</span><span class="pill">RIR 1-2 sulle serie dure</span><span class="pill">Progressione doppia</span><span class="pill">Recupero per esercizio</span></div></section><div class="tabs">${[1,2,3,4].map(x=>`<button class="btn tab ${x===state.day?'primary':''}" onclick="state.day=${x};persist();render()">Giorno ${x}</button>`).join('')}</div><div class="grid">${d.ex.map((e,i)=>renderExercise(d,i,e)).join('')}</div><div class="note" style="margin-top:14px"><b>Progressione:</b> quando completi tutte le serie nel range alto con tecnica pulita e circa 1-2 RIR, aumenta il carico del minimo disponibile e riparti dal basso del range. Non serve andare a cedimento su ogni serie.</div>`}
+function renderExercise(d,i,e){const k=key(state.day,i);const rest=Number(document.querySelector(`[data-rest="${k}"]`)?.value||localStorage.getItem('rest-'+k)||e[4]||state.settings.defaultRest);const done=(state.checks[k]||[]);let timer=formatTime(rest);if(timers[k])timer=formatTime(Math.max(0,(timers[k].end-Date.now())/1000));return `<article class="exercise"><div class="ex-head"><div><div class="tag">${i+1} / ${d.ex.length}</div><div class="ex-name">${e[0]}</div><div class="target">${e[1]}</div></div><div class="mini">${e[2]} set • ${e[3]} reps</div></div><div class="meta"><span class="mini">RIR 1-2</span><span class="mini">Recupero per esercizio</span></div><div class="cue">${e[5]}</div><div class="timer-row"><div><div class="small">RECUPERO</div><div class="timer" data-timer="${k}">${timer}</div></div><div class="btns"><button class="btn primary" onclick="startRest(${state.day},${i})">AVVIA</button><button class="btn" onclick="changeRest(${state.day},${i},-${state.settings.step})">-${state.settings.step}s</button><button class="btn" onclick="changeRest(${state.day},${i},${state.settings.step})">+${state.settings.step}s</button><button class="btn alt" onclick="resetRest(${state.day},${i})">RESET</button></div></div><div class="restbar"><label>Secondi recupero</label><input type="number" min="15" step="15" data-rest="${k}" value="${rest}" onchange="localStorage.setItem('rest-${k}',this.value);resetRest(${state.day},${i})"><button class="btn" onclick="completeSet(${state.day},${i})">SERIE FATTA → TIMER</button></div><div class="check"><span class="small">SET</span>${[...Array(Number(String(e[2]).split('+')[0])||1)].map((_,s)=>`<button class="set ${(done[s]?'done':'')}" onclick="setDone(${state.day},${i},${s})">${s+1}</button>`).join('')}<span class="small">${done.filter(Boolean).length}/${Number(String(e[2]).split('+')[0])||1}</span></div></article>`}
+function renderDiet(){return `<section class="hero"><h1>DIETA FLEX CUT</h1><p>Punto di partenza per ~78 kg, 1,77 m, 31 anni e 4 allenamenti/settimana. Non è una prescrizione medica: il target va corretto guardando la media del peso per 2-3 settimane.</p><div class="kpi"><div><b>~2.200</b><span>kcal training</span></div><div><b>145-155 g</b><span>proteine</span></div><div><b>~2.000</b><span>kcal rest</span></div></div></section><div class="grid">${DIETS.map(d=>`<article class="nutrition-card"><h3 style="margin:0 0 8px">${d.title}</h3><div class="macrogrid"><div class="macro"><b>${d.kcal}</b><span>kcal training</span></div><div class="macro"><b>${d.protein} g</b><span>proteine</span></div><div class="macro"><b>${d.carbs} g</b><span>carboidrati</span></div><div class="macro"><b>${d.fat} g</b><span>grassi</span></div></div>${d.meals.map(m=>`<div class="meal"><h4>${m[0]} ${m[2]?'<span class="small">'+m[2]+'</span>':''}</h4><p>${m[1]}</p></div>`).join('')}</article>`).join('')}</div><div class="warn" style="margin-top:14px"><b>Diabete:</b> la distribuzione dei carboidrati, il timing e la quota proteica vanno adattati alla terapia e alle glicemie. In presenza di nefropatia/albuminuria non usare automaticamente il target proteico senza confronto clinico. L'obiettivo qui è un deficit moderato e sostenibile, non una dieta aggressiva.</div>`}
+function renderProgress(){const w=state.weights.slice(-8),wa=state.waists.slice(-8);return `<section class="hero"><h1>PROGRESSI</h1><p>Conta la tendenza, non il singolo peso. Inserisci i dati al mattino, dopo il bagno e prima di mangiare.</p></section><article class="nutrition-card"><div class="form"><label>Peso (kg)<input id="weight" inputmode="decimal" placeholder="78.0"></label><label>Girovita (cm)<input id="waist" inputmode="decimal" placeholder="es. 92"></label><div class="full"><button class="btn primary" onclick="addProgress()">SALVA MISURA</button></div></div></article><h3 class="section-title">Ultime misure</h3>${w.length?`<div class="grid">${w.map((x,i)=>`<div class="nutrition-card"><b>${x.date}</b><div style="display:flex;gap:20px;margin-top:8px"><span>${x.value} kg</span>${wa[i]?`<span>${wa[i].value} cm vita</span>`:''}</div></div>`).join('')}</div>`:'<div class="empty">Ancora nessuna misura.</div>'}<div class="note" style="margin-top:14px"><b>Regola di aggiustamento:</b> se la media del peso non scende per 3 settimane e il girovita non cambia, riduci circa 100-150 kcal/die. Se perdi troppo rapidamente o la performance crolla, rialza leggermente le calorie.</div>`}
+function addProgress(){const v=parseFloat(document.getElementById('weight').value),waist=parseFloat(document.getElementById('waist').value),date=new Date().toLocaleDateString('it-IT');if(v){state.weights.push({date,value:v});if(waist)state.waists.push({date,value:waist});persist();render();}}
+function renderSettings(){return `<section class="hero"><h1>SETUP</h1><p>Tutto resta nel browser del telefono. I recuperi per singolo esercizio possono essere modificati direttamente dai numeri.</p></section><article class="nutrition-card"><div class="form"><label>Recupero predefinito (s)<input type="number" min="15" step="15" value="${state.settings.defaultRest}" onchange="state.settings.defaultRest=Math.max(15,+this.value);persist();render()"></label><label>Passo +/- (s)<select onchange="state.settings.step=+this.value;persist();render()"><option ${state.settings.step===15?'selected':''}>15</option><option ${state.settings.step===30?'selected':''}>30</option><option ${state.settings.step===45?'selected':''}>45</option><option ${state.settings.step===60?'selected':''}>60</option></select></label><div class="full"><label style="display:flex;align-items:center;gap:10px"><input type="checkbox" ${state.settings.sound?'checked':''} onchange="state.settings.sound=this.checked;persist()" style="width:auto"> Suono fine recupero</label></div></div></article><h3 class="section-title">Regole semplici</h3><div class="grid"><div class="note">Riscaldamento: 5-8 min + 2-4 serie di avvicinamento sul primo esercizio pesante. Non contare le serie di riscaldamento nel volume di lavoro.</div><div class="note">Cardio: tieni i tuoi 5 min di camminata inclinata come finisher leggero. Nei giorni senza palestra, aggiungi camminate facili se ti sono comode.</div></div>`}
+function render(){document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===state.view));const root=document.getElementById('app');root.innerHTML=state.view==='workout'?renderWorkout():state.view==='diet'?renderDiet():state.view==='progress'?renderProgress():renderSettings();if(state.view==='workout')document.getElementById('dayLabel').textContent='DAY '+state.day+' • '+PLAN[state.day].name;}
+document.querySelectorAll('.navbtn').forEach(b=>b.addEventListener('click',()=>{state.view=b.dataset.view;persist();render()}));window.addEventListener('beforeunload',persist);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});render();
+</script>
+</body>
+</html>
