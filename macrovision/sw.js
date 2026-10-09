@@ -1,5 +1,5 @@
 /* MacroVision: funzionamento offline. Le richieste a Open Food Facts e al server AI passano sempre dalla rete. */
-var CACHE = 'macrovision-2.1.0';
+var CACHE = 'macrovision-2.2.0';
 var ASSETS = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
