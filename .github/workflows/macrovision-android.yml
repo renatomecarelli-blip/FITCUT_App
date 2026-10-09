@@ -66,3 +66,10 @@ jobs:
           git add -A
           git commit -qm "Build Android ${{ github.sha }}"
           git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" android-build
+
+      - name: Pulizia dei rami temporanei
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        shell: bash
+        run: |
+          for b in ci-test ci-out macrovision macrovision-2.1 android-dev; do git push -q origin --delete "$b" 2>/dev/null || true; done
