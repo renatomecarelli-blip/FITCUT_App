@@ -1,0 +1,68 @@
+# Compila l'app Android di MacroVision (pacchetto .aab per il Play Store e .apk di prova)
+# con la versione web contenuta in macrovision/. I risultati finiscono nel ramo android-build.
+name: MacroVision Android
+
+on:
+  push:
+    branches: [main, android-dev]
+    paths:
+      - 'macrovision/**'
+      - 'macrovision-android/**'
+      - '.github/workflows/macrovision-android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: macrovision-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      - name: Copia l'app web dentro l'app Android
+        run: |
+          mkdir -p macrovision-android/app/src/main/assets/www
+          cp macrovision/index.html macrovision/manifest.webmanifest macrovision-android/app/src/main/assets/www/
+          cp -r macrovision/icons macrovision-android/app/src/main/assets/www/
+
+      - name: Compila
+        working-directory: macrovision-android
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --stacktrace bundleRelease assembleRelease 2>&1 | tee ../build.log
+
+      - name: Pubblica i risultati nel ramo android-build
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p out
+          cp build.log out/ 2>/dev/null || true
+          cp macrovision-android/app/build/outputs/bundle/release/*.aab out/ 2>/dev/null || true
+          cp macrovision-android/app/build/outputs/apk/release/*.apk out/ 2>/dev/null || true
+          cp macrovision-android/app/build/reports/lint-results*.html out/ 2>/dev/null || true
+          cp macrovision-android/app/build/outputs/mapping/release/mapping.txt out/ 2>/dev/null || true
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/36.* 2>/dev/null | sort -V | tail -1)
+          cp "$BT/lib/apksigner.jar" out/ 2>/dev/null || true
+          echo "commit ${{ github.sha }} ramo ${{ github.ref_name }} esito ${{ job.status }}" > out/STATO.txt
+          cd out
+          git init -q -b android-build
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "Build Android ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" android-build

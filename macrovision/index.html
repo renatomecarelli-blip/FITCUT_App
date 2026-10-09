@@ -373,6 +373,19 @@ textarea.input { min-height: 96px; resize: vertical; }
   .sheet { bottom: 24px; border-radius: var(--r-l); border-bottom: 1px solid var(--line); max-height: calc(100% - 48px); }
 }
 
+/* ---------- 2.2: miniature, codice a barre, porzioni ---------- */
+.item .thumb { width: 42px; height: 42px; border-radius: 10px; object-fit: contain; background: #fff; flex: none; }
+.code-head { display: flex; gap: 14px; align-items: flex-start; }
+.code-head > svg.i { width: 34px; height: 34px; color: var(--brand-a); margin-top: 2px; }
+.code-head b { display: block; font-size: 17px; margin-bottom: 4px; color: var(--text); }
+.code-head span { color: var(--text-2); font-size: 14.5px; }
+.code-opts .opt { align-items: center; width: 100%; min-height: 60px; color: var(--text); }
+.code-opts .opt > svg.i { color: var(--brand-a); }
+.ai-note { display: flex; gap: 10px; align-items: flex-start; }
+.ai-note > svg.i { color: var(--brand-a); margin-top: 1px; }
+.gsearch { width: 100%; height: 64px; border: 0; border-radius: 12px; background: transparent; }
+#f-eq { min-height: 18px; margin-top: -6px; text-align: center; }
+
 </style>
 </head>
 <body>
@@ -892,378 +905,832 @@ textarea.input { min-height: 96px; resize: vertical; }
 /*
  * Database offline di MacroVision: valori medi indicativi per 100 g (o 100 ml).
  * Carboidrati "disponibili" (senza fibra), come sulle etichette europee.
- * Formato: [nome, kcal, proteine, carboidrati, grassi, porzione tipica, parole chiave, unità, categoria]
- * La categoria (carne, pesce, verdura, patate, uova + genere m/f/mp/fp) attiva i metodi di cottura:
- * per questi alimenti i valori sono da crudo e l'app calcola griglia, forno, padella, bollito, vapore, fritto.
+ * Formato: [nome, kcal, proteine, carboidrati, grassi, porzione tipica (g), parole chiave, unità, categoria, porzioni]
+ * - unità: null = grammi, 'ml' per i liquidi.
+ * - categoria (carne, pesce, verdura, patate, uova + genere m/f/mp/fp): attiva le cotture. I valori sono da crudo
+ *   e l'app calcola griglia, forno, padella, bollito, vapore, fritto.
+ * - porzioni: unità naturali 'singolare/plurale=grammi' separate da ';', ad esempio 'fetta/fette=40'.
  */
 window.MV_FOODS = [
   // ---------- Pasta, riso, cereali ----------
-  ['Pasta di semola (secca)', 357, 12.8, 71.8, 1.5, 80, 'spaghetti penne fusilli maccheroni rigatoni linguine farfalle mezze maniche cruda'],
+  ['Pasta di semola (secca)', 357, 12.8, 71.8, 1.5, 80, 'spaghetti penne fusilli maccheroni rigatoni linguine farfalle mezze maniche paccheri bucatini tortiglioni cruda'],
   ['Pasta di semola (cotta)', 158, 5.8, 30.9, 0.9, 200, 'spaghetti penne fusilli rigatoni lessata bollita scolata'],
   ['Pasta integrale (secca)', 350, 13.5, 65, 2.5, 80, 'spaghetti penne integrali cruda'],
   ['Pasta integrale (cotta)', 150, 5.8, 28, 1.1, 200, 'spaghetti penne integrali lessata'],
   ["Pasta all'uovo (secca)", 367, 14.5, 67, 4.5, 80, 'tagliatelle fettuccine pappardelle uovo cruda'],
   ["Pasta all'uovo fresca", 284, 11, 52, 3.5, 100, 'tagliatelle fettuccine fresca uovo'],
+  ['Pasta senza glutine (secca)', 355, 7, 78, 1.5, 80, 'pasta senza glutine celiaci mais riso'],
+  ['Pasta di legumi (secca)', 340, 24, 48, 2.5, 80, 'pasta lenticchie ceci piselli legumi'],
+  ['Pasta di farro (secca)', 340, 13, 66, 2, 80, 'pasta farro'],
+  ['Pasta di kamut (secca)', 350, 14, 67, 2.2, 80, 'pasta kamut khorasan'],
+  ['Pastina (secca)', 357, 12.8, 72, 1.5, 40, 'pastina stelline anellini ditalini brodo'],
+  ['Lasagne (sfoglia secca)', 360, 13, 70, 2.5, 50, 'sfoglia lasagne'],
   ['Tortellini freschi al prosciutto', 300, 12.5, 46, 7.5, 125, 'tortellini cappelletti ripieni'],
+  ['Tortellini secchi', 370, 14, 60, 8, 100, 'tortellini secchi'],
   ['Ravioli ricotta e spinaci (freschi)', 260, 10, 38, 7.5, 125, 'ravioli ripieni ricotta spinaci'],
+  ['Ravioli di carne (freschi)', 270, 12, 37, 8.5, 125, 'ravioli carne agnolotti plin'],
   ['Gnocchi di patate', 155, 3.8, 33, 0.4, 200, 'gnocchi patate'],
+  ['Gnocchi alla romana', 180, 6.5, 20, 8, 200, 'gnocchi romana semolino'],
+  ['Spaghetti di riso (secchi)', 360, 6, 80, 0.6, 80, 'spaghetti riso noodles vermicelli'],
+  ["Noodles all'uovo (secchi)", 384, 14, 71, 4.4, 80, 'noodles uovo cinesi'],
+  ['Noodles istantanei (ramen)', 440, 9, 60, 17, 85, 'ramen noodles istantanei'],
   ['Riso bianco (crudo)', 358, 7, 80, 0.6, 80, 'riso carnaroli arborio basmati vialone'],
   ['Riso bianco (cotto)', 130, 2.7, 28.2, 0.3, 180, 'riso lessato bollito basmati'],
-  ['Riso integrale (crudo)', 360, 7.5, 76, 2.7, 80, 'riso integrale venere'],
+  ['Riso integrale (crudo)', 360, 7.5, 76, 2.7, 80, 'riso integrale'],
   ['Riso integrale (cotto)', 123, 2.7, 25.6, 1, 180, 'riso integrale lessato'],
+  ['Riso venere (crudo)', 357, 8, 74, 3, 80, 'riso venere nero'],
+  ['Riso parboiled (crudo)', 357, 7.5, 79, 0.7, 80, 'riso parboiled'],
+  ['Riso per sushi (cotto, condito)', 155, 2.6, 34, 0.3, 150, 'riso sushi'],
   ['Cous cous (secco)', 360, 12.8, 72.4, 0.6, 70, 'couscous'],
   ['Cous cous (cotto)', 112, 3.8, 23.2, 0.2, 180, 'couscous'],
+  ['Bulgur (crudo)', 342, 12, 64, 1.3, 70, 'bulgur'],
   ['Orzo perlato (crudo)', 350, 10, 70, 1.4, 70, 'orzo'],
+  ['Orzo perlato (cotto)', 123, 2.3, 26, 0.4, 180, 'orzo cotto'],
   ['Farro perlato (crudo)', 345, 14, 65, 2.5, 70, 'farro'],
+  ['Farro (cotto)', 125, 5, 24, 0.9, 180, 'farro cotto'],
   ['Quinoa (cruda)', 365, 14, 57, 6, 70, 'quinoa'],
+  ['Quinoa (cotta)', 120, 4.4, 19, 1.9, 180, 'quinoa cotta'],
+  ['Grano saraceno (crudo)', 343, 13, 62, 3.4, 70, 'grano saraceno'],
+  ['Miglio (crudo)', 378, 11, 69, 4.2, 70, 'miglio'],
+  ['Amaranto (crudo)', 371, 13.6, 62, 7, 70, 'amaranto'],
   ['Polenta (farina di mais)', 358, 8.7, 76, 1.5, 70, 'polenta farina mais'],
   ['Polenta (cotta)', 75, 1.8, 16, 0.3, 250, 'polenta'],
-  ["Fiocchi d'avena", 372, 13.5, 58.7, 7, 40, 'avena porridge oats'],
+  ["Fiocchi d'avena", 372, 13.5, 58.7, 7, 40, 'avena porridge oats', null, null, 'cucchiaio/cucchiai=10'],
+  ["Crusca d'avena", 375, 17, 50, 7, 30, 'crusca avena', null, null, 'cucchiaio/cucchiai=8'],
+  ['Porridge (avena e latte)', 105, 4.5, 14, 3.3, 250, 'porridge avena latte', null, null, 'tazza/tazze=250'],
   ['Corn flakes', 378, 7, 84, 0.9, 30, 'cereali colazione cornflakes'],
+  ['Cereali al cioccolato', 390, 8, 75, 5, 30, 'cereali cioccolato colazione'],
+  ['Riso soffiato', 385, 7, 84, 1, 30, 'riso soffiato cereali'],
+  ['Cereali integrali con crusca', 340, 12, 50, 4.5, 30, 'cereali integrali crusca fibra colazione'],
   ['Muesli', 365, 9.7, 63, 6, 40, 'cereali colazione'],
   ['Granola', 445, 10, 60, 18, 40, 'cereali colazione croccanti'],
-  ['Farina di grano tenero 00', 341, 11, 71, 1.2, 50, 'farina 00 0'],
+  ['Farina di grano tenero 00', 341, 11, 71, 1.2, 50, 'farina 00 0', null, null, 'cucchiaio/cucchiai=10'],
+  ['Farina integrale', 340, 13, 61, 2.5, 50, 'farina integrale'],
+  ['Semola di grano duro', 360, 12, 72, 1.5, 50, 'semola rimacinata'],
+  ['Farina di riso', 366, 6, 80, 1.4, 50, 'farina riso'],
+  ['Farina di ceci', 387, 22, 50, 6.7, 50, 'farina ceci'],
+  ['Farina di mandorle', 600, 21, 10, 52, 30, 'farina mandorle'],
+  ['Amido di mais', 381, 0.3, 91, 0.1, 10, 'maizena amido mais fecola'],
+  ['Pangrattato', 395, 13, 72, 5, 20, 'pangrattato pane grattugiato', null, null, 'cucchiaio/cucchiai=8'],
 
   // ---------- Pane e prodotti da forno ----------
-  ['Pane comune', 265, 8.8, 51, 1.6, 50, 'pane bianco rosetta filone pagnotta michetta'],
-  ['Pane integrale', 250, 11, 42, 3.4, 50, 'pane'],
-  ['Pane in cassetta', 265, 8, 47, 4.5, 30, 'pancarre bauletto tramezzini toast'],
-  ['Ciabatta', 266, 9, 52, 2.5, 60, 'pane ciabatta'],
+  ['Pane comune', 265, 8.8, 51, 1.6, 40, 'pane bianco rosetta filone pagnotta michetta', null, null, 'fetta/fette=40;rosetta/rosette=60'],
+  ['Pane integrale', 250, 11, 42, 3.4, 40, 'pane integrale', null, null, 'fetta/fette=40'],
+  ['Pane di segale', 259, 8.5, 48, 3.3, 40, 'pane segale', null, null, 'fetta/fette=40'],
+  ['Pane ai cereali', 270, 10, 44, 5, 40, 'pane cereali semi multicereali', null, null, 'fetta/fette=40'],
+  ['Pane senza glutine', 250, 3, 45, 6, 40, 'pane senza glutine celiaci', null, null, 'fetta/fette=35'],
+  ['Pane toscano', 270, 8, 56, 0.6, 40, 'pane toscano sciapo', null, null, 'fetta/fette=40'],
+  ['Pane in cassetta', 265, 8, 47, 4.5, 25, 'pancarre bauletto tramezzini toast', null, null, 'fetta/fette=25'],
+  ['Pane per hamburger', 280, 9, 49, 4.5, 60, 'panino hamburger bun', null, null, 'panino/panini=60'],
+  ['Panino al latte', 310, 9, 50, 7.5, 40, 'panino latte', null, null, 'panino/panini=40'],
+  ['Ciabatta', 266, 9, 52, 2.5, 60, 'pane ciabatta', null, null, 'ciabattina/ciabattine=80'],
+  ['Baguette', 270, 9, 54, 1.5, 60, 'baguette filone francese'],
+  ['Pane arabo / pita', 275, 9, 55, 1.2, 60, 'pane arabo pita', null, null, 'pita/pite=60'],
+  ['Tortilla di frumento (wrap)', 310, 8.5, 50, 8, 60, 'tortilla wrap', null, null, 'tortilla/tortillas=60'],
+  ['Piadina', 315, 8, 50, 9, 120, 'piada', null, null, 'piadina/piadine=120'],
   ['Focaccia genovese', 305, 7, 45, 11, 100, 'focaccia'],
-  ['Piadina', 315, 8, 50, 9, 120, 'piada'],
+  ['Pizza bianca', 300, 7.5, 50, 8, 100, 'pizza bianca'],
   ['Pane carasau', 370, 11, 75, 2, 30, 'carasau guttiau'],
-  ['Fette biscottate', 408, 11.5, 73, 6.5, 20, 'fette tostate'],
-  ['Crackers salati', 428, 9.5, 69, 12, 25, 'cracker'],
-  ['Grissini', 410, 12, 70, 9, 20, 'grissino'],
-  ['Taralli', 465, 10, 63, 19, 30, 'taralli tarallini'],
-  ['Friselle', 342, 11, 70, 2, 50, 'frise friselle'],
-  ['Gallette di riso', 387, 8, 81, 2.8, 10, 'gallette'],
-  ['Cornetto semplice', 406, 8.2, 44, 21, 55, 'brioche croissant vuoto'],
-  ['Cornetto alla crema', 380, 7, 45, 19, 70, 'brioche croissant crema'],
-  ['Cornetto alla marmellata', 370, 6.5, 48, 17, 70, 'brioche croissant marmellata albicocca'],
-  ['Cornetto integrale', 365, 8.5, 43, 17.5, 60, 'brioche croissant integrale'],
-  ['Biscotti frollini', 470, 7, 68, 19, 30, 'biscotti frollini'],
-  ['Biscotti secchi', 420, 7.5, 76, 9.5, 30, 'biscotti secchi oro'],
-  ['Biscotti con gocce di cioccolato', 484, 6.5, 65, 22, 30, 'biscotti cioccolato'],
-  ['Wafer', 515, 6, 62, 27, 30, 'wafer'],
-  ['Merendina pan di spagna farcita', 397, 6, 55, 17, 35, 'merendina snack'],
-  ['Muffin al cioccolato', 408, 6, 50, 20.5, 80, 'muffin'],
-  ['Plumcake', 398, 6, 52, 18.5, 35, 'plumcake'],
-  ['Barretta ai cereali', 395, 6, 68, 11, 25, 'barretta snack cereali'],
-  ['Barretta proteica', 350, 30, 32, 11, 50, 'barretta proteica proteine'],
-  ['Pancake', 229, 6, 30, 9.5, 80, 'pancake frittelle'],
+  ['Fette biscottate', 408, 11.5, 73, 6.5, 18, 'fette tostate', null, null, 'fetta/fette=9'],
+  ['Fette biscottate integrali', 380, 13, 64, 6.5, 18, 'fette biscottate integrali', null, null, 'fetta/fette=9'],
+  ['Crackers salati', 428, 9.5, 69, 12, 25, 'cracker', null, null, 'pacchetto/pacchetti=25'],
+  ['Crackers integrali', 410, 11, 64, 11, 25, 'cracker integrali', null, null, 'pacchetto/pacchetti=25'],
+  ['Grissini', 410, 12, 70, 9, 20, 'grissino', null, null, 'grissino/grissini=5'],
+  ['Taralli', 465, 10, 63, 19, 30, 'taralli tarallini', null, null, 'tarallo/taralli=8'],
+  ['Friselle', 342, 11, 70, 2, 50, 'frise friselle', null, null, 'frisella/friselle=50'],
+  ['Crostini / bruschette secche', 400, 11, 70, 7, 20, 'crostini bruschette'],
+  ['Gallette di riso', 387, 8, 81, 2.8, 16, 'gallette', null, null, 'galletta/gallette=8'],
+  ['Gallette di mais', 380, 8, 80, 3, 16, 'gallette mais', null, null, 'galletta/gallette=8'],
+  ['Cornetto semplice', 406, 8.2, 44, 21, 55, 'brioche croissant vuoto', null, null, 'cornetto/cornetti=55'],
+  ['Cornetto alla crema', 380, 7, 45, 19, 70, 'brioche croissant crema', null, null, 'cornetto/cornetti=70'],
+  ['Cornetto alla marmellata', 370, 6.5, 48, 17, 70, 'brioche croissant marmellata albicocca', null, null, 'cornetto/cornetti=70'],
+  ['Cornetto al cioccolato', 420, 7, 48, 22, 70, 'brioche croissant cioccolato nutella saccottino', null, null, 'cornetto/cornetti=70'],
+  ['Cornetto integrale', 365, 8.5, 43, 17.5, 60, 'brioche croissant integrale', null, null, 'cornetto/cornetti=60'],
+  ['Pan brioche', 345, 8, 51, 12, 40, 'pan brioche', null, null, 'fetta/fette=30'],
+  ['Biscotti frollini', 470, 7, 68, 19, 30, 'biscotti frollini', null, null, 'biscotto/biscotti=10'],
+  ['Biscotti secchi', 420, 7.5, 76, 9.5, 30, 'biscotti secchi oro', null, null, 'biscotto/biscotti=6'],
+  ['Biscotti integrali', 450, 8, 65, 16, 30, 'biscotti integrali digestive', null, null, 'biscotto/biscotti=10'],
+  ['Biscotti con gocce di cioccolato', 484, 6.5, 65, 22, 30, 'biscotti cioccolato', null, null, 'biscotto/biscotti=10'],
+  ['Biscotti al burro', 490, 6.5, 66, 22, 30, 'biscotti burro danesi', null, null, 'biscotto/biscotti=8'],
+  ['Biscotti farciti al cacao', 480, 5, 69, 20, 30, 'biscotti farciti cacao oreo ringo', null, null, 'biscotto/biscotti=11'],
+  ['Savoiardi', 390, 8, 80, 3.5, 20, 'savoiardi pavesini', null, null, 'savoiardo/savoiardi=10'],
+  ['Amaretti', 440, 8, 76, 12, 20, 'amaretti', null, null, 'amaretto/amaretti=6'],
+  ['Cantucci', 420, 10, 66, 13, 30, 'cantucci cantuccini', null, null, 'cantuccio/cantucci=10'],
+  ['Wafer', 515, 6, 62, 27, 30, 'wafer kitkat'],
+  ['Merendina pan di spagna farcita', 397, 6, 55, 17, 35, 'merendina snack', null, null, 'merendina/merendine=35'],
+  ['Merendina crostatina', 400, 5, 64, 14, 40, 'crostatina merendina', null, null, 'merendina/merendine=40'],
+  ['Merendina al cioccolato', 440, 6, 54, 22, 35, 'tortina merendina cioccolato', null, null, 'merendina/merendine=35'],
+  ['Muffin al cioccolato', 408, 6, 50, 20.5, 80, 'muffin', null, null, 'muffin/muffin=80'],
+  ['Plumcake', 398, 6, 52, 18.5, 35, 'plumcake', null, null, 'plumcake/plumcake=35'],
+  ['Barretta ai cereali', 395, 6, 68, 11, 25, 'barretta snack cereali', null, null, 'barretta/barrette=25'],
+  ['Barretta proteica', 350, 30, 32, 11, 50, 'barretta proteica proteine', null, null, 'barretta/barrette=50'],
+  ['Pancake', 229, 6, 30, 9.5, 80, 'pancake', null, null, 'pancake/pancake=40'],
 
   // ---------- Carne (valori da crudo, cotture calcolate) ----------
-  ['Petto di pollo', 110, 23.3, 0, 1.5, 150, 'pollo petto fettine', null, 'carne:m'],
-  ['Coscia di pollo con pelle', 210, 17, 0, 15.5, 200, 'pollo coscia sovracoscia', null, 'carne:f'],
-  ['Petto di tacchino', 107, 24, 0, 1.2, 150, 'tacchino fesa fettine', null, 'carne:m'],
-  ['Manzo magro', 125, 21.5, 0, 4.5, 150, 'manzo fesa girello fettine vitellone', null, 'carne:m'],
-  ['Bistecca di manzo', 155, 21, 0, 7.8, 200, 'bistecca controfiletto entrecote costata manzo', null, 'carne:f'],
+  ['Petto di pollo', 110, 23.3, 0, 1.5, 150, 'pollo petto fettine *', null, 'carne:m', 'fettina/fettine=100'],
+  ['Coscia di pollo con pelle', 210, 17, 0, 15.5, 200, 'pollo coscia', null, 'carne:f', 'coscia/cosce=200'],
+  ['Sovracoscia di pollo senza pelle', 121, 19.7, 0, 4.1, 150, 'pollo sovracoscia senza pelle', null, 'carne:f'],
+  ['Fusi di pollo', 161, 18.1, 0, 9.2, 150, 'fusi fuselli pollo', null, 'carne:mp', 'fuso/fusi=100'],
+  ['Ali di pollo', 222, 18.3, 0, 16, 150, 'ali alette pollo', null, 'carne:fp', 'aletta/alette=50'],
+  ['Pollo intero con pelle', 215, 18.6, 0, 15.1, 250, 'pollo intero', null, 'carne:m'],
+  ['Petto di tacchino', 107, 24, 0, 1.2, 150, 'tacchino fesa fettine *', null, 'carne:m', 'fettina/fettine=100'],
+  ['Fusi di tacchino', 144, 19.5, 0, 7.2, 200, 'tacchino coscia fuso', null, 'carne:mp'],
+  ['Macinato di tacchino', 148, 19.7, 0, 7.7, 120, 'macinato tacchino', null, 'carne:m'],
+  ['Hamburger di pollo', 155, 17, 3, 8.5, 100, 'hamburger burger pollo', null, 'carne:m', 'hamburger/hamburger=100'],
+  ['Manzo magro', 125, 21.5, 0, 4.5, 150, 'manzo fesa girello fettine vitellone', null, 'carne:m', 'fettina/fettine=100'],
+  ['Bistecca di manzo', 155, 21, 0, 7.8, 200, 'bistecca controfiletto entrecote costata manzo tagliata', null, 'carne:f'],
   ['Filetto di manzo', 138, 21, 0, 6, 150, 'filetto manzo', null, 'carne:m'],
+  ['Polpa di manzo (spezzatino)', 135, 21, 0, 5.5, 150, 'spezzatino manzo polpa cubetti', null, 'carne:f'],
   ['Macinato di manzo', 176, 20, 0, 10, 120, 'carne macinata trita', null, 'carne:m'],
-  ['Hamburger di manzo', 215, 18.5, 0, 15.5, 120, 'hamburger burger manzo', null, 'carne:m'],
-  ['Vitello magro', 107, 21, 0, 2.5, 150, 'vitello fesa scaloppine fettine', null, 'carne:m'],
-  ['Lonza di maiale', 143, 21, 0, 6.5, 150, 'maiale lonza braciola', null, 'carne:f'],
+  ['Macinato di manzo magro (5%)', 137, 21.4, 0, 5, 120, 'macinato magro', null, 'carne:m'],
+  ['Macinato misto (manzo e maiale)', 230, 17.5, 0, 17.5, 120, 'macinato misto', null, 'carne:m'],
+  ['Hamburger di manzo', 215, 18.5, 0, 15.5, 120, 'hamburger burger manzo', null, 'carne:m', 'hamburger/hamburger=120'],
+  ['Vitello magro', 107, 21, 0, 2.5, 150, 'vitello fesa scaloppine fettine', null, 'carne:m', 'fettina/fettine=100'],
+  ['Ossobuco di vitello', 120, 19.5, 0, 4.6, 250, 'ossobuco', null, 'carne:m'],
+  ['Lonza di maiale', 143, 21, 0, 6.5, 150, 'maiale lonza', null, 'carne:f'],
+  ['Filetto di maiale', 112, 20.8, 0, 3, 150, 'filetto maiale', null, 'carne:m'],
+  ['Braciola di maiale', 172, 20.9, 0, 9.6, 180, 'braciola maiale costoletta', null, 'carne:f', 'braciola/braciole=180'],
   ['Costine di maiale', 280, 16, 0, 24, 200, 'costine maiale puntine', null, 'carne:fp'],
-  ['Salsiccia di maiale', 300, 15, 0.5, 26.5, 100, 'salsiccia luganega', null, 'carne:f'],
+  ['Pancetta fresca di maiale', 518, 9.3, 0, 53, 100, 'pancetta fresca maiale', null, 'carne:f'],
+  ['Salsiccia di maiale', 300, 15, 0.5, 26.5, 100, 'salsiccia luganega salamella', null, 'carne:f', 'salsiccia/salsicce=100'],
+  ['Salsiccia di pollo e tacchino', 160, 16, 1, 10, 100, 'salsiccia pollo tacchino', null, 'carne:f', 'salsiccia/salsicce=80'],
   ['Agnello', 180, 18, 0, 12, 150, 'agnello abbacchio cosciotto costolette', null, 'carne:m'],
+  ['Capretto', 122, 19.2, 0, 5, 150, 'capretto', null, 'carne:m'],
   ['Coniglio', 134, 21, 0, 5.5, 150, 'coniglio', null, 'carne:m'],
+  ['Carne di cavallo', 133, 21.4, 0, 4.6, 150, 'cavallo equina', null, 'carne:f'],
+  ["Petto d'anatra", 132, 18.3, 0, 6, 150, 'anatra petto', null, 'carne:m'],
+  ['Faraona', 110, 20.6, 0, 2.5, 200, 'faraona', null, 'carne:f'],
   ['Fegato di vitello', 135, 20, 4, 4, 120, 'fegato', null, 'carne:m'],
+  ['Cotechino (cotto)', 360, 18, 1.5, 31, 100, 'cotechino zampone'],
+  ['Trippa (cotta)', 85, 12, 2, 3.5, 200, 'trippa'],
+  ['Cotoletta di pollo impanata', 240, 15, 18, 12, 120, 'cotoletta pollo impanata panata', null, null, 'cotoletta/cotolette=110'],
+  ['Cordon bleu', 260, 13, 17, 15, 120, 'cordon bleu', null, null, 'pezzo/pezzi=110'],
+  ['Burger vegetale', 230, 16, 9, 14, 110, 'burger vegetale veggie soia plant based', null, null, 'burger/burger=110'],
 
   // ---------- Salumi e carni pronte ----------
-  ['Prosciutto crudo', 260, 26, 0.3, 17.5, 50, 'prosciutto parma san daniele'],
-  ['Prosciutto cotto', 140, 19.5, 1, 6.5, 50, 'prosciutto cotto'],
-  ['Bresaola', 151, 32, 0.4, 2.6, 50, 'bresaola'],
-  ['Fesa di tacchino (affettato)', 104, 21, 1, 1.8, 50, 'fesa tacchino affettato arrosto'],
-  ['Speck', 299, 28, 0.5, 20.5, 40, 'speck'],
-  ['Salame', 390, 26, 1, 31, 30, 'salame milano napoli ungherese'],
-  ['Mortadella', 317, 14.7, 0, 28.1, 40, 'mortadella'],
-  ['Coppa', 400, 24, 0.5, 33.5, 40, 'coppa capocollo'],
-  ['Pancetta', 450, 15, 0, 43, 30, 'pancetta tesa arrotolata'],
+  ['Prosciutto crudo', 260, 26, 0.3, 17.5, 50, 'prosciutto parma san daniele', null, null, 'fetta/fette=12'],
+  ['Prosciutto crudo sgrassato', 170, 29, 0.3, 6, 50, 'prosciutto crudo magro sgrassato', null, null, 'fetta/fette=12'],
+  ['Prosciutto cotto', 140, 19.5, 1, 6.5, 50, 'prosciutto cotto', null, null, 'fetta/fette=20'],
+  ['Bresaola', 151, 32, 0.4, 2.6, 50, 'bresaola', null, null, 'fetta/fette=7'],
+  ['Fesa di tacchino (affettato)', 104, 21, 1, 1.8, 50, 'fesa tacchino affettato arrosto', null, null, 'fetta/fette=15'],
+  ['Petto di pollo arrosto (affettato)', 105, 21, 1, 2, 50, 'pollo affettato arrosto petto', null, null, 'fetta/fette=15'],
+  ['Speck', 299, 28, 0.5, 20.5, 40, 'speck', null, null, 'fetta/fette=10'],
+  ['Culatello', 255, 29, 0.5, 15, 40, 'culatello', null, null, 'fetta/fette=10'],
+  ['Salame', 390, 26, 1, 31, 30, 'salame milano napoli ungherese felino soppressata', null, null, 'fetta/fette=6'],
+  ['Finocchiona', 410, 24, 1, 34, 30, 'finocchiona salame finocchio', null, null, 'fetta/fette=8'],
+  ['Salsiccia stagionata', 400, 25, 1, 33, 30, 'salsiccia secca stagionata'],
+  ['Mortadella', 317, 14.7, 0, 28.1, 40, 'mortadella', null, null, 'fetta/fette=15'],
+  ['Coppa', 400, 24, 0.5, 33.5, 40, 'coppa capocollo', null, null, 'fetta/fette=8'],
+  ['Pancetta', 450, 15, 0, 43, 30, 'pancetta tesa arrotolata cubetti'],
   ['Guanciale', 655, 9, 0, 69, 30, 'guanciale'],
-  ['Bacon cotto', 541, 37, 1.4, 42, 20, 'bacon pancetta affumicata croccante'],
-  ['Würstel', 270, 13, 2, 23.5, 100, 'wurstel'],
-  ['Würstel di pollo', 226, 12, 4, 18, 100, 'wurstel pollo'],
+  ['Lardo', 890, 2, 0, 98, 10, 'lardo colonnata'],
+  ["'Nduja", 500, 12, 2, 50, 20, 'nduja spalmabile piccante'],
+  ['Porchetta', 300, 21, 0.5, 24, 80, 'porchetta ariccia'],
+  ['Pastrami', 150, 21, 1.5, 6, 50, 'pastrami'],
+  ['Bacon cotto', 541, 37, 1.4, 42, 20, 'bacon pancetta affumicata croccante', null, null, 'fetta/fette=8'],
+  ['Würstel', 270, 13, 2, 23.5, 100, 'wurstel', null, null, 'würstel/würstel=50'],
+  ['Würstel di pollo', 226, 12, 4, 18, 100, 'wurstel pollo', null, null, 'würstel/würstel=50'],
 
   // ---------- Pesce (valori da crudo, cotture calcolate) ----------
-  ['Salmone', 208, 20.4, 0, 13.4, 150, 'salmone filetto trancio', null, 'pesce:m'],
-  ['Merluzzo', 82, 17.8, 0, 0.7, 150, 'merluzzo nasello filetto', null, 'pesce:m'],
+  ['Salmone', 208, 20.4, 0, 13.4, 150, 'salmone filetto trancio', null, 'pesce:m', 'trancio/tranci=150'],
+  ['Merluzzo', 82, 17.8, 0, 0.7, 150, 'merluzzo nasello filetto', null, 'pesce:m', 'filetto/filetti=120'],
   ['Orata', 121, 19.7, 0, 4.7, 200, 'orata', null, 'pesce:f'],
   ['Branzino', 110, 19, 0, 3.6, 200, 'branzino spigola', null, 'pesce:m'],
-  ['Pesce spada', 118, 19.6, 0, 4.4, 150, 'pesce spada', null, 'pesce:m'],
+  ['Pesce spada', 118, 19.6, 0, 4.4, 150, 'pesce spada', null, 'pesce:m', 'trancio/tranci=150'],
+  ['Tonno fresco', 108, 23.3, 0, 1, 150, 'tonno fresco trancio', null, 'pesce:m', 'trancio/tranci=150'],
   ['Sgombro', 200, 18.6, 0, 13.9, 150, 'sgombro', null, 'pesce:m'],
+  ['Trota', 138, 20, 0, 6.5, 150, 'trota salmonata', null, 'pesce:f'],
+  ['Sogliola', 83, 16.9, 0.8, 1.4, 150, 'sogliola', null, 'pesce:f'],
+  ['Platessa', 86, 16.7, 0, 1.9, 150, 'platessa passera', null, 'pesce:f', 'filetto/filetti=100'],
+  ['Cernia', 92, 19.4, 0, 1, 150, 'cernia', null, 'pesce:f'],
+  ['Dentice', 101, 20.7, 0, 2.1, 150, 'dentice pagro', null, 'pesce:m'],
+  ['Rombo', 95, 16, 0, 3, 150, 'rombo', null, 'pesce:m'],
+  ['Ricciola', 120, 21, 0, 4, 150, 'ricciola', null, 'pesce:f'],
+  ['Pesce persico', 91, 19.4, 0, 0.9, 150, 'persico', null, 'pesce:m'],
+  ['Pangasio', 85, 15, 0, 2.6, 150, 'pangasio', null, 'pesce:m'],
+  ['Tilapia', 96, 20, 0, 1.7, 150, 'tilapia', null, 'pesce:f'],
+  ['Aringa', 158, 18, 0, 9, 100, 'aringa', null, 'pesce:f'],
   ['Alici', 125, 20.3, 0, 4.8, 100, 'alici acciughe', null, 'pesce:fp'],
-  ['Trota', 138, 20, 0, 6.5, 150, 'trota', null, 'pesce:f'],
-  ['Tonno fresco', 108, 23.3, 0, 1, 150, 'tonno fresco trancio', null, 'pesce:m'],
-  ['Calamari', 92, 15.6, 3.1, 1.4, 150, 'calamari totani seppie anelli', null, 'pesce:mp'],
+  ['Sardine', 129, 20.8, 1.5, 4.5, 120, 'sardine sarde', null, 'pesce:fp'],
+  ['Baccalà ammollato', 95, 21.5, 0, 0.8, 150, 'baccala stoccafisso', null, 'pesce:m'],
+  ['Calamari', 92, 15.6, 3.1, 1.4, 150, 'calamari totani anelli', null, 'pesce:mp'],
+  ['Seppie', 72, 14, 0.7, 1.5, 150, 'seppia seppie', null, 'pesce:fp'],
   ['Polpo', 82, 14.9, 2.2, 1, 150, 'polpo', null, 'pesce:m'],
-  ['Gamberi', 85, 20, 0, 0.5, 120, 'gamberi gamberetti mazzancolle scampi', null, 'pesce:mp'],
+  ['Moscardini', 65, 13, 1, 1, 150, 'moscardini', null, 'pesce:mp'],
+  ['Gamberi', 85, 20, 0, 0.5, 120, 'gamberi gamberetti mazzancolle', null, 'pesce:mp'],
+  ['Scampi', 90, 18, 0.5, 1.2, 120, 'scampi', null, 'pesce:mp'],
+  ['Astice / aragosta', 85, 18, 0.5, 0.9, 150, 'astice aragosta', null, 'pesce:m'],
+  ['Capesante', 75, 14, 3, 0.7, 100, 'capesante cappesante', null, 'pesce:fp'],
   ['Cozze (sgusciate)', 86, 11.9, 3.7, 2.2, 100, 'cozze', null, 'pesce:fp'],
   ['Vongole (sgusciate)', 86, 14.7, 3.6, 1, 80, 'vongole', null, 'pesce:fp'],
-  ['Baccalà ammollato', 95, 21.5, 0, 0.8, 150, 'baccala stoccafisso', null, 'pesce:m'],
-  ['Tonno al naturale (sgocciolato)', 110, 25.5, 0, 1, 80, 'tonno scatola naturale'],
-  ["Tonno sott'olio (sgocciolato)", 190, 25, 0, 10, 80, 'tonno scatola olio'],
-  ['Salmone affumicato', 117, 18.3, 0, 4.3, 50, 'salmone affumicato'],
-  ['Surimi', 99, 7.6, 15, 0.9, 50, 'surimi bastoncini granchio'],
-  ['Bastoncini di pesce', 200, 12, 18, 9, 100, 'bastoncini pesce impanati findus'],
+  ['Ostriche', 69, 10.2, 5.4, 0.9, 100, 'ostriche crude', null, null, 'ostrica/ostriche=15'],
+  ['Polpa di granchio', 85, 18, 0, 1.1, 100, 'granchio polpa'],
+  ['Tonno al naturale (sgocciolato)', 110, 25.5, 0, 1, 80, 'tonno scatola naturale *', null, null, 'scatoletta/scatolette=56'],
+  ["Tonno sott'olio (sgocciolato)", 190, 25, 0, 10, 80, 'tonno scatola olio', null, null, 'scatoletta/scatolette=56'],
+  ["Sgombro sott'olio (sgocciolato)", 230, 21, 0, 16, 90, 'sgombro scatola olio'],
+  ["Sardine sott'olio (sgocciolate)", 208, 24.6, 0, 11.5, 90, 'sardine scatola olio'],
+  ["Acciughe sott'olio (sgocciolate)", 210, 28.9, 0, 9.7, 20, 'acciughe alici filetti sott olio', null, null, 'filetto/filetti=4'],
+  ['Alici marinate', 130, 19, 1, 5.5, 80, 'alici marinate'],
+  ['Salmone affumicato', 117, 18.3, 0, 4.3, 50, 'salmone affumicato', null, null, 'fetta/fette=15'],
+  ['Uova di lompo', 120, 14, 2, 6.5, 15, 'uova lompo caviale'],
+  ['Bottarga', 350, 40, 0.5, 20, 10, 'bottarga muggine tonno'],
+  ['Surimi', 99, 7.6, 15, 0.9, 50, 'surimi bastoncini granchio', null, null, 'bastoncino/bastoncini=17'],
+  ['Bastoncini di pesce', 200, 12, 18, 9, 100, 'bastoncini pesce impanati', null, null, 'bastoncino/bastoncini=25'],
+  ['Filetti di merluzzo impanati', 180, 12, 16, 7.5, 125, 'filetti merluzzo impanati panati', null, null, 'filetto/filetti=125'],
 
   // ---------- Uova ----------
-  ['Uovo intero', 143, 12.6, 0.7, 9.5, 55, 'uova uovo', null, 'uova:m'],
-  ['Albume', 52, 10.9, 0.7, 0.2, 100, 'chiara albumi uova', null, 'uova:m'],
+  ['Uovo intero', 143, 12.6, 0.7, 9.5, 55, 'uova uovo', null, 'uova:m', 'uovo/uova=55;uovo grande/uova grandi=65'],
+  ['Albume', 52, 10.9, 0.7, 0.2, 100, 'chiara albumi', null, 'uova:m', 'albume/albumi=33'],
+  ['Tuorlo', 325, 16, 0.6, 29, 18, 'tuorlo rosso uovo', null, null, 'tuorlo/tuorli=18'],
+  ['Uova di quaglia', 158, 13, 0.4, 11, 50, 'uova quaglia', null, null, 'uovo/uova=10'],
 
-  // ---------- Latte, yogurt, formaggi ----------
-  ['Latte intero', 64, 3.3, 4.8, 3.6, 200, 'latte', 'ml'],
-  ['Latte parzialmente scremato', 46, 3.4, 5, 1.5, 200, 'latte', 'ml'],
-  ['Latte scremato', 35, 3.4, 5, 0.2, 200, 'latte', 'ml'],
-  ['Bevanda di soia', 39, 3.3, 1.5, 2, 200, 'latte soia vegetale', 'ml'],
-  ["Bevanda d'avena", 45, 0.8, 7.5, 1.4, 200, 'latte avena vegetale', 'ml'],
-  ['Bevanda di mandorla', 15, 0.5, 0.3, 1.2, 200, 'latte mandorla vegetale', 'ml'],
-  ['Bevanda di riso', 50, 0.3, 10, 1, 200, 'latte riso vegetale', 'ml'],
-  ['Kefir', 60, 3.5, 4.5, 3.2, 150, 'kefir', 'ml'],
-  ['Yogurt bianco intero', 66, 3.8, 4.7, 3.5, 125, 'yogurt'],
-  ['Yogurt bianco magro', 40, 4.3, 5.2, 0.2, 125, 'yogurt magro'],
-  ['Yogurt alla frutta', 98, 3.4, 14, 3, 125, 'yogurt frutta'],
-  ['Yogurt greco 0%', 56, 10, 3.5, 0.2, 170, 'yogurt greco magro'],
-  ['Yogurt greco intero', 95, 9, 3.5, 5, 170, 'yogurt greco'],
-  ['Skyr', 62, 11, 4, 0.2, 150, 'skyr'],
-  ['Mozzarella', 253, 18.7, 0.7, 19.5, 125, 'mozzarella fiordilatte'],
-  ['Mozzarella light', 165, 19, 1, 9.5, 125, 'mozzarella'],
-  ['Mozzarella di bufala', 288, 16.7, 0.4, 24.4, 125, 'mozzarella bufala'],
-  ['Burrata', 300, 12, 1, 27.5, 100, 'burrata stracciatella'],
-  ['Parmigiano Reggiano', 392, 33, 0, 28.4, 10, 'parmigiano grana formaggio'],
-  ['Grana Padano', 398, 33, 0, 29, 10, 'grana formaggio'],
-  ['Pecorino romano', 391, 28, 0, 31, 10, 'pecorino formaggio'],
+  // ---------- Latte e bevande vegetali ----------
+  ['Latte intero', 64, 3.3, 4.8, 3.6, 200, 'latte', 'ml', null, 'tazza/tazze=200;bicchiere/bicchieri=200'],
+  ['Latte parzialmente scremato', 46, 3.4, 5, 1.5, 200, 'latte', 'ml', null, 'tazza/tazze=200;bicchiere/bicchieri=200'],
+  ['Latte scremato', 35, 3.4, 5, 0.2, 200, 'latte', 'ml', null, 'tazza/tazze=200;bicchiere/bicchieri=200'],
+  ['Latte senza lattosio', 46, 3.4, 5, 1.5, 200, 'latte senza lattosio delattosato', 'ml', null, 'tazza/tazze=200'],
+  ['Latte di capra', 69, 3.6, 4.5, 4.1, 200, 'latte capra', 'ml', null, 'tazza/tazze=200'],
+  ['Latte condensato zuccherato', 321, 7.9, 54, 8.7, 20, 'latte condensato'],
+  ['Bevanda di soia', 39, 3.3, 1.5, 2, 200, 'latte soia vegetale', 'ml', null, 'tazza/tazze=200'],
+  ["Bevanda d'avena", 45, 0.8, 7.5, 1.4, 200, 'latte avena vegetale', 'ml', null, 'tazza/tazze=200'],
+  ['Bevanda di mandorla', 15, 0.5, 0.3, 1.2, 200, 'latte mandorla vegetale', 'ml', null, 'tazza/tazze=200'],
+  ['Bevanda di riso', 50, 0.3, 10, 1, 200, 'latte riso vegetale', 'ml', null, 'tazza/tazze=200'],
+  ['Bevanda di cocco', 20, 0.2, 2.7, 0.9, 200, 'latte cocco bevanda vegetale', 'ml', null, 'tazza/tazze=200'],
+  ['Latte di cocco (per cucinare)', 197, 2, 2.8, 21, 50, 'latte cocco lattina', 'ml'],
+  ['Kefir', 60, 3.5, 4.5, 3.2, 150, 'kefir', 'ml', null, 'bicchiere/bicchieri=200'],
+
+  // ---------- Yogurt e dessert al latte ----------
+  ['Yogurt bianco intero', 66, 3.8, 4.7, 3.5, 125, 'yogurt', null, null, 'vasetto/vasetti=125'],
+  ['Yogurt bianco magro', 40, 4.3, 5.2, 0.2, 125, 'yogurt magro', null, null, 'vasetto/vasetti=125'],
+  ['Yogurt alla frutta', 98, 3.4, 14, 3, 125, 'yogurt frutta', null, null, 'vasetto/vasetti=125'],
+  ['Yogurt greco 0%', 56, 10, 3.5, 0.2, 170, 'yogurt greco magro', null, null, 'vasetto/vasetti=170;vasetto piccolo/vasetti piccoli=150'],
+  ['Yogurt greco 2%', 73, 9.9, 3.2, 2, 170, 'yogurt greco 2', null, null, 'vasetto/vasetti=170;vasetto piccolo/vasetti piccoli=150'],
+  ['Yogurt greco intero', 95, 9, 3.5, 5, 170, 'yogurt greco 5', null, null, 'vasetto/vasetti=170;vasetto piccolo/vasetti piccoli=150'],
+  ['Yogurt greco 10%', 128, 6.5, 3.5, 10, 150, 'yogurt greco 10 total', null, null, 'vasetto/vasetti=150'],
+  ['Yogurt greco alla frutta', 105, 7.5, 12, 2.5, 150, 'yogurt greco frutta miele', null, null, 'vasetto/vasetti=150'],
+  ['Yogurt proteico', 57, 10, 3.6, 0.2, 160, 'yogurt proteico protein', null, null, 'vasetto/vasetti=160'],
+  ['Yogurt di soia', 50, 4, 2.1, 2.3, 125, 'yogurt soia vegetale', null, null, 'vasetto/vasetti=125'],
+  ['Yogurt da bere', 75, 3, 12, 1.5, 200, 'yogurt bere drink', 'ml', null, 'bottiglietta/bottigliette=200'],
+  ['Skyr', 62, 11, 4, 0.2, 150, 'skyr', null, null, 'vasetto/vasetti=150'],
+  ['Budino al cioccolato', 120, 3, 20, 3, 125, 'budino cioccolato', null, null, 'vasetto/vasetti=125'],
+  ['Budino alla vaniglia', 105, 3, 17, 3, 125, 'budino vaniglia crema', null, null, 'vasetto/vasetti=125'],
+  ['Budino proteico', 80, 10, 6, 1.5, 200, 'budino proteico', null, null, 'vasetto/vasetti=200'],
+
+  // ---------- Formaggi ----------
+  ['Mozzarella', 253, 18.7, 0.7, 19.5, 125, 'mozzarella fiordilatte', null, null, 'mozzarella/mozzarelle=125'],
+  ['Mozzarella light', 165, 19, 1, 9.5, 125, 'mozzarella light', null, null, 'mozzarella/mozzarelle=125'],
+  ['Mozzarella di bufala', 288, 16.7, 0.4, 24.4, 125, 'mozzarella bufala', null, null, 'mozzarella/mozzarelle=125'],
+  ['Mozzarella per pizza', 280, 22, 2, 20.5, 50, 'mozzarella pizza cubetti julienne'],
+  ['Burrata', 300, 12, 1, 27.5, 100, 'burrata', null, null, 'burrata/burrate=125'],
+  ['Stracciatella', 255, 11, 2, 22.5, 100, 'stracciatella'],
+  ['Parmigiano Reggiano', 392, 33, 0, 28.4, 10, 'parmigiano grana formaggio grattugiato', null, null, 'cucchiaio/cucchiai=5'],
+  ['Grana Padano', 398, 33, 0, 29, 10, 'grana formaggio grattugiato', null, null, 'cucchiaio/cucchiai=5'],
+  ['Pecorino romano', 391, 28, 0, 31, 10, 'pecorino formaggio', null, null, 'cucchiaio/cucchiai=5'],
+  ['Pecorino sardo / toscano', 387, 26, 0.2, 31, 30, 'pecorino sardo toscano fiore stagionato'],
+  ['Primosale', 250, 16, 1, 20, 50, 'primosale pecorino fresco'],
   ['Gorgonzola', 328, 19, 0, 28, 30, 'gorgonzola formaggio erborinato'],
   ['Scamorza', 329, 25, 1, 25, 50, 'scamorza affumicata'],
-  ['Provola', 346, 26, 1, 26.5, 50, 'provola affumicata provolone'],
+  ['Provola', 346, 26, 1, 26.5, 50, 'provola affumicata'],
+  ['Provolone', 374, 28, 2, 28.9, 40, 'provolone dolce piccante'],
+  ['Caciocavallo', 439, 37.7, 2.3, 31.1, 40, 'caciocavallo silano'],
   ['Stracchino', 280, 16.5, 0, 24, 50, 'stracchino crescenza'],
+  ['Squacquerone', 210, 10, 3, 17.5, 50, 'squacquerone'],
   ['Robiola', 285, 14, 2, 24.5, 50, 'robiola'],
+  ['Quartirolo', 305, 21, 0.5, 24.5, 50, 'quartirolo'],
   ['Taleggio', 315, 19, 0, 26.5, 40, 'taleggio'],
   ['Fontina', 341, 24.5, 0, 27, 40, 'fontina'],
   ['Asiago', 360, 27, 0, 28, 40, 'asiago'],
-  ['Emmental', 380, 28.5, 0, 29.5, 30, 'emmental groviera'],
+  ['Montasio', 380, 29, 1, 29, 40, 'montasio'],
+  ['Emmental', 380, 28.5, 0, 29.5, 30, 'emmental groviera', null, null, 'fetta/fette=20'],
+  ['Edamer', 350, 26, 0, 27.5, 30, 'edamer edam gouda olandese', null, null, 'fetta/fette=20'],
+  ['Cheddar', 403, 25, 1.3, 33, 30, 'cheddar', null, null, 'fetta/fette=20'],
+  ['Brie', 334, 20.8, 0.5, 27.7, 40, 'brie'],
+  ['Camembert', 300, 19.8, 0.5, 24.3, 40, 'camembert'],
   ['Feta', 265, 14.2, 4.1, 21.3, 50, 'feta'],
+  ['Halloumi', 320, 21, 2.2, 25, 50, 'halloumi'],
+  ['Caprino fresco', 264, 18.5, 1, 21, 50, 'caprino capra formaggio'],
+  ['Formaggio a fette', 280, 13, 6, 22.5, 20, 'sottilette fette formaggio fuso', null, null, 'fetta/fette=20'],
+  ['Formaggio a fette light', 190, 20, 6, 9.5, 20, 'sottilette light', null, null, 'fetta/fette=20'],
   ['Ricotta vaccina', 146, 8.8, 3.5, 10.9, 100, 'ricotta'],
-  ['Fiocchi di latte', 98, 11, 3.4, 4.3, 150, 'cottage'],
+  ['Ricotta di pecora', 157, 9.5, 4.2, 11.5, 100, 'ricotta pecora'],
+  ['Ricotta light', 105, 10, 4, 5.5, 100, 'ricotta light magra'],
+  ['Fiocchi di latte', 98, 11, 3.4, 4.3, 150, 'cottage', null, null, 'vasetto/vasetti=150'],
   ['Mascarpone', 455, 4.5, 3.5, 47, 30, 'mascarpone'],
-  ['Formaggio spalmabile', 252, 5.5, 3.5, 24, 30, 'philadelphia spalmabile'],
-  ['Formaggio spalmabile light', 154, 8, 4.5, 11.5, 30, 'philadelphia spalmabile light'],
-  ['Panna da cucina', 200, 2.5, 4, 19.5, 50, 'panna cucina'],
+  ['Formaggio spalmabile', 252, 5.5, 3.5, 24, 30, 'philadelphia spalmabile', null, null, 'cucchiaio/cucchiai=20'],
+  ['Formaggio spalmabile light', 154, 8, 4.5, 11.5, 30, 'philadelphia spalmabile light', null, null, 'cucchiaio/cucchiai=20'],
+
+  // ---------- Burro, panna, grassi ----------
+  ['Panna da cucina', 200, 2.5, 4, 19.5, 50, 'panna cucina', null, null, 'confezione/confezioni=200'],
+  ['Panna da cucina vegetale', 180, 1, 4, 17.5, 50, 'panna vegetale soia'],
   ['Panna fresca', 335, 2.1, 3, 35, 50, 'panna montare', 'ml'],
-  ['Burro', 740, 0.7, 0.6, 82, 10, 'burro'],
+  ['Panna spray', 255, 2, 11, 22, 20, 'panna spray montata'],
+  ['Burro', 740, 0.7, 0.6, 82, 10, 'burro', null, null, 'noce di burro/noci di burro=10'],
+  ['Burro chiarificato (ghee)', 900, 0, 0, 99.5, 10, 'ghee burro chiarificato'],
+  ['Margarina', 720, 0.2, 0.7, 80, 10, 'margarina'],
+  ["Olio extravergine d'oliva", 899, 0, 0, 99.9, 10, 'olio evo oliva', 'ml', null, 'cucchiaio/cucchiai=10;cucchiaino/cucchiaini=4'],
+  ['Olio di semi', 899, 0, 0, 99.9, 10, 'olio semi girasole mais arachidi', 'ml', null, 'cucchiaio/cucchiai=10;cucchiaino/cucchiaini=4'],
+  ['Olio di cocco', 892, 0, 0, 99, 10, 'olio cocco', null, null, 'cucchiaio/cucchiai=10'],
+  ['Strutto', 900, 0, 0, 99.5, 10, 'strutto sugna'],
 
   // ---------- Legumi e alternative ----------
-  ['Ceci lessati / in scatola', 130, 7.5, 16, 2.4, 150, 'ceci'],
+  ['Ceci lessati / in scatola', 130, 7.5, 16, 2.4, 150, 'ceci', null, null, 'scatola sgocciolata/scatole sgocciolate=240'],
   ['Ceci secchi', 355, 20, 50, 6, 70, 'ceci secchi'],
-  ['Fagioli lessati / in scatola', 93, 6.5, 12.5, 0.5, 150, 'fagioli borlotti cannellini'],
+  ['Fagioli lessati / in scatola', 93, 6.5, 12.5, 0.5, 150, 'fagioli borlotti cannellini', null, null, 'scatola sgocciolata/scatole sgocciolate=240'],
   ['Fagioli secchi', 330, 23, 47, 1.5, 70, 'fagioli secchi borlotti cannellini'],
+  ['Fagioli neri lessati', 120, 8, 15, 0.5, 150, 'fagioli neri'],
+  ['Fagioli rossi in scatola', 100, 7, 13, 0.5, 150, 'fagioli rossi kidney'],
   ['Lenticchie lessate / in scatola', 105, 8, 14, 0.5, 150, 'lenticchie'],
   ['Lenticchie secche', 323, 24, 48, 1.5, 70, 'lenticchie'],
+  ['Lenticchie rosse decorticate (secche)', 340, 25, 52, 1.5, 70, 'lenticchie rosse decorticate'],
+  ['Piselli secchi', 300, 22, 48, 2, 70, 'piselli secchi spezzati'],
+  ['Fave fresche', 70, 5.5, 8, 0.4, 150, 'fave'],
+  ['Fave secche', 340, 27, 50, 1.5, 70, 'fave secche'],
+  ['Lupini', 115, 16, 7, 2.5, 50, 'lupini'],
+  ['Soia gialla secca', 400, 37, 15, 19, 50, 'soia fagioli'],
   ['Edamame', 121, 11.9, 3.7, 5.2, 100, 'edamame soia'],
-  ['Hummus', 235, 7.5, 12, 17, 50, 'hummus ceci'],
+  ['Hummus', 235, 7.5, 12, 17, 50, 'hummus ceci', null, null, 'cucchiaio/cucchiai=20'],
+  ['Falafel', 330, 13, 30, 18, 100, 'falafel', null, null, 'polpetta/polpette=20'],
+  ['Burger di legumi', 180, 8, 18, 8, 100, 'burger legumi ceci veggie', null, null, 'burger/burger=100'],
   ['Tofu', 125, 13, 1.5, 7.5, 100, 'tofu soia'],
+  ['Tofu affumicato', 160, 16, 2, 10, 100, 'tofu affumicato'],
   ['Tempeh', 192, 20.3, 7.6, 10.8, 100, 'tempeh'],
   ['Seitan', 125, 24, 4, 1.9, 100, 'seitan'],
 
   // ---------- Verdura (valori da crudo, cotture calcolate) ----------
-  ['Zucchine', 17, 1.2, 2.1, 0.3, 200, 'zucchina zucchine', null, 'verdura:fp'],
-  ['Melanzane', 25, 1, 2.9, 0.2, 200, 'melanzana melanzane', null, 'verdura:fp'],
-  ['Peperoni', 31, 1, 4.5, 0.3, 150, 'peperone peperoni', null, 'verdura:mp'],
-  ['Carote', 41, 0.9, 6.8, 0.2, 100, 'carota carote', null, 'verdura:fp'],
+  ['Zucchine', 17, 1.2, 2.1, 0.3, 200, 'zucchina zucchine', null, 'verdura:fp', 'zucchina/zucchine=200'],
+  ['Melanzane', 25, 1, 2.9, 0.2, 200, 'melanzana melanzane', null, 'verdura:fp', 'melanzana/melanzane=300'],
+  ['Peperoni', 31, 1, 4.5, 0.3, 150, 'peperone peperoni', null, 'verdura:mp', 'peperone/peperoni=200'],
+  ['Carote', 41, 0.9, 6.8, 0.2, 100, 'carota carote', null, 'verdura:fp', 'carota/carote=80'],
   ['Broccoli', 34, 2.8, 4, 0.4, 200, 'broccolo broccoli', null, 'verdura:mp'],
   ['Cavolfiore', 25, 1.9, 3, 0.3, 200, 'cavolfiore', null, 'verdura:m'],
   ['Cavolini di Bruxelles', 43, 3.4, 5.2, 0.3, 150, 'cavolini bruxelles', null, 'verdura:mp'],
-  ['Cavolo verza', 25, 1.3, 3.3, 0.1, 200, 'cavolo verza cappuccio', null, 'verdura:m'],
+  ['Cavolo verza', 25, 1.3, 3.3, 0.1, 200, 'cavolo verza', null, 'verdura:m'],
+  ['Cavolo cappuccio', 25, 1.3, 3.5, 0.1, 150, 'cavolo cappuccio', null, 'verdura:m'],
+  ['Cavolo rosso', 31, 1.4, 5, 0.2, 150, 'cavolo rosso viola', null, 'verdura:m'],
   ['Cavolo nero', 40, 3.3, 4.4, 0.7, 150, 'cavolo nero kale', null, 'verdura:m'],
+  ['Cime di rapa', 22, 2.9, 2, 0.3, 200, 'cime rapa broccoletti friarielli', null, 'verdura:fp'],
   ['Spinaci', 23, 2.9, 1.4, 0.4, 200, 'spinacio spinaci', null, 'verdura:mp'],
   ['Bietole', 19, 1.8, 2.1, 0.2, 200, 'bietola bietole coste erbette', null, 'verdura:fp'],
+  ['Cicoria', 17, 1.5, 1.8, 0.2, 200, 'cicoria catalogna puntarelle', null, 'verdura:f'],
+  ['Scarola', 17, 1.3, 1.6, 0.2, 200, 'scarola indivia', null, 'verdura:f'],
+  ['Agretti', 17, 1.8, 1.5, 0.2, 200, 'agretti barba frate', null, 'verdura:mp'],
   ['Fagiolini', 31, 1.8, 4.3, 0.2, 150, 'fagiolini cornetti', null, 'verdura:mp'],
+  ['Taccole', 42, 2.8, 5, 0.2, 150, 'taccole piselli mangiatutto', null, 'verdura:fp'],
   ['Piselli', 75, 5.3, 9.5, 0.4, 150, 'piselli surgelati', null, 'verdura:mp'],
   ['Asparagi', 20, 2.2, 1.8, 0.1, 150, 'asparago asparagi', null, 'verdura:mp'],
-  ['Carciofi', 40, 3.3, 5, 0.2, 150, 'carciofo carciofi', null, 'verdura:mp'],
-  ['Finocchi', 31, 1.2, 4.2, 0.2, 150, 'finocchio finocchi', null, 'verdura:mp'],
+  ['Carciofi', 40, 3.3, 5, 0.2, 150, 'carciofo carciofi', null, 'verdura:mp', 'carciofo/carciofi=60'],
+  ['Cardi', 17, 0.6, 1.7, 0.1, 200, 'cardi cardo gobbi', null, 'verdura:mp'],
+  ['Finocchi', 31, 1.2, 4.2, 0.2, 150, 'finocchio finocchi', null, 'verdura:mp', 'finocchio/finocchi=250'],
   ['Zucca', 26, 1, 6, 0.1, 200, 'zucca', null, 'verdura:f'],
   ['Funghi champignon', 22, 3.1, 2.3, 0.3, 150, 'funghi champignon', null, 'verdura:mp'],
   ['Funghi porcini', 26, 3.9, 1.5, 0.4, 150, 'funghi porcini', null, 'verdura:mp'],
-  ['Cipolle', 40, 1.1, 7.6, 0.1, 80, 'cipolla cipolle', null, 'verdura:fp'],
+  ['Funghi misti', 33, 3.3, 3.5, 0.4, 150, 'funghi pleurotus chiodini finferli misti', null, 'verdura:mp'],
+  ['Cipolle', 40, 1.1, 7.6, 0.1, 80, 'cipolla cipolle', null, 'verdura:fp', 'cipolla/cipolle=100'],
   ['Porri', 61, 1.5, 12.4, 0.3, 100, 'porro porri', null, 'verdura:mp'],
-  ['Pomodori', 18, 0.9, 2.7, 0.2, 150, 'pomodoro pomodori', null, 'verdura:mp'],
+  ['Pomodori', 18, 0.9, 2.7, 0.2, 150, 'pomodoro pomodori', null, 'verdura:mp', 'pomodoro/pomodori=120'],
   ['Radicchio', 23, 1.4, 3.6, 0.3, 100, 'radicchio trevisano', null, 'verdura:m'],
-  ['Pomodorini', 20, 0.9, 3, 0.2, 100, 'pomodorini ciliegini datterini'],
-  ['Insalata (lattuga)', 15, 1.4, 1.6, 0.2, 80, 'insalata lattuga verdura iceberg'],
+  ['Rape', 28, 0.9, 4.5, 0.1, 150, 'rapa rape', null, 'verdura:fp'],
+  ['Sedano rapa', 42, 1.5, 6, 0.3, 150, 'sedano rapa', null, 'verdura:m'],
+  ['Verdure miste per minestrone', 40, 2.5, 5.5, 0.4, 200, 'minestrone surgelato verdure miste', null, 'verdura:fp'],
+  ['Pomodorini', 20, 0.9, 3, 0.2, 100, 'pomodorini ciliegini datterini', null, null, 'pomodorino/pomodorini=15'],
+  ['Insalata (lattuga)', 15, 1.4, 1.6, 0.2, 80, 'insalata lattuga verdura iceberg romana'],
   ['Insalata mista', 20, 1.2, 2.5, 0.3, 100, 'insalata mista'],
+  ['Valeriana / songino', 21, 2, 0.7, 0.4, 50, 'valeriana songino misticanza'],
   ['Rucola', 25, 2.6, 2.1, 0.7, 50, 'rucola'],
-  ['Cetrioli', 15, 0.7, 3.1, 0.1, 150, 'cetriolo cetrioli'],
-  ['Sedano', 16, 0.7, 1.4, 0.2, 80, 'sedano'],
+  ['Cetrioli', 15, 0.7, 3.1, 0.1, 150, 'cetriolo cetrioli', null, null, 'cetriolo/cetrioli=200'],
+  ['Sedano', 16, 0.7, 1.4, 0.2, 80, 'sedano', null, null, 'gambo/gambi=40'],
   ['Ravanelli', 16, 0.7, 1.8, 0.1, 50, 'ravanello ravanelli'],
+  ['Germogli di soia', 30, 3, 4, 0.2, 50, 'germogli soia'],
   ['Barbabietola (cotta)', 44, 1.7, 8, 0.2, 100, 'barbabietola rapa rossa'],
-  ['Mais dolce (in scatola)', 82, 2.9, 13.4, 1.4, 70, 'mais'],
-  ['Olive verdi', 145, 1, 0.5, 15, 30, 'olive verdi'],
-  ['Olive nere', 115, 0.8, 2.8, 10.7, 30, 'olive nere'],
-  ['Aglio', 149, 6.4, 31, 0.5, 5, 'aglio'],
+  ['Mais dolce (in scatola)', 82, 2.9, 13.4, 1.4, 70, 'mais', null, null, 'scatoletta/scatolette=140'],
+  ['Olive verdi', 145, 1, 0.5, 15, 30, 'olive verdi', null, null, 'oliva/olive=4'],
+  ['Olive nere', 115, 0.8, 2.8, 10.7, 30, 'olive nere', null, null, 'oliva/olive=3'],
+  ['Aglio', 149, 6.4, 31, 0.5, 5, 'aglio', null, null, 'spicchio/spicchi=5'],
+  ['Zenzero', 80, 1.8, 15, 0.8, 5, 'zenzero'],
+  ['Capperi', 23, 2.4, 2, 0.9, 5, 'capperi'],
   ['Passata di pomodoro', 33, 1.5, 5, 0.2, 100, 'passata sugo pomodoro'],
   ['Pelati', 24, 1.2, 3.5, 0.2, 100, 'pomodori pelati polpa'],
+  ['Concentrato di pomodoro', 82, 4.3, 16, 0.5, 15, 'concentrato pomodoro'],
+  ['Pomodori secchi', 258, 14, 44, 3, 20, 'pomodori secchi'],
+  ["Pomodori secchi sott'olio", 215, 5, 23, 14, 20, 'pomodori secchi olio'],
+  ["Carciofini sott'olio", 145, 2, 5, 13, 30, 'carciofini sott olio'],
+  ["Funghi sott'olio", 120, 2, 3, 11, 30, 'funghi sott olio'],
+  ['Giardiniera', 30, 1, 5, 0.3, 50, 'giardiniera sottaceti'],
+  ['Cetriolini sottaceto', 15, 0.5, 2.5, 0.2, 30, 'cetriolini sottaceto'],
 
   // ---------- Patate ----------
-  ['Patate', 77, 2, 17, 0.1, 200, 'patata patate', null, 'patate:fp'],
-  ['Patatine fritte (fast food)', 312, 3.4, 41, 15, 150, 'patatine fritte chips mcdonald'],
+  ['Patate', 77, 2, 17, 0.1, 200, 'patata patate', null, 'patate:fp', 'patata/patate=150'],
+  ['Patate dolci', 86, 1.6, 18, 0.1, 200, 'patata dolce americana batata', null, 'patate:fp', 'patata/patate=200'],
+  ['Topinambur', 73, 2, 17, 0, 150, 'topinambur', null, 'patate:m'],
+  ['Patatine fritte (fast food)', 312, 3.4, 41, 15, 150, 'patatine fritte chips'],
+  ['Patatine surgelate al forno', 160, 2.5, 25, 5, 150, 'patatine surgelate forno'],
   ['Purè di patate', 100, 2, 13, 4.5, 200, 'pure patate'],
-  ['Patatine in busta', 535, 6.5, 50, 34, 30, 'chips patatine'],
+  ['Crocchette di patate', 210, 4, 25, 10.5, 100, 'crocchette patate panzerotti', null, null, 'crocchetta/crocchette=35'],
 
   // ---------- Frutta ----------
-  ['Mela', 52, 0.3, 12, 0.2, 150, 'mela mele'],
-  ['Banana', 89, 1.1, 20, 0.3, 120, 'banana'],
-  ['Arancia', 47, 0.9, 9.4, 0.1, 180, 'arancia arance'],
-  ['Pera', 57, 0.4, 12, 0.1, 160, 'pera pere'],
-  ['Fragole', 32, 0.7, 5.7, 0.3, 150, 'fragola fragole'],
-  ['Kiwi', 61, 1.1, 11.7, 0.5, 80, 'kiwi'],
-  ['Uva', 69, 0.7, 17.2, 0.2, 150, 'uva'],
-  ['Clementine / mandarini', 47, 0.9, 10.3, 0.2, 100, 'clementina mandarino'],
-  ['Pesca', 39, 0.9, 8, 0.3, 150, 'pesca pesche nettarina'],
-  ['Albicocche', 48, 1.4, 9.5, 0.4, 100, 'albicocca albicocche'],
-  ['Ciliegie', 63, 1.1, 14, 0.2, 150, 'ciliegia ciliegie'],
-  ['Prugne', 46, 0.7, 10, 0.3, 100, 'prugna prugne susine'],
-  ['Fichi', 74, 0.8, 16.3, 0.3, 100, 'fico fichi'],
-  ['Ananas', 50, 0.5, 11.7, 0.1, 150, 'ananas'],
-  ['Anguria', 30, 0.6, 7.2, 0.2, 300, 'anguria cocomero'],
-  ['Melone', 34, 0.8, 7.3, 0.2, 200, 'melone'],
-  ['Mango', 60, 0.8, 13.4, 0.4, 150, 'mango'],
-  ['Mirtilli', 57, 0.7, 12.1, 0.3, 100, 'mirtillo mirtilli'],
-  ['Lamponi', 52, 1.2, 5.4, 0.7, 100, 'lampone lamponi frutti bosco'],
-  ['Pompelmo', 42, 0.8, 9, 0.1, 200, 'pompelmo'],
-  ['Cachi', 70, 0.6, 15, 0.2, 150, 'cachi kaki loti'],
-  ['Melograno', 83, 1.7, 14.7, 1.2, 100, 'melograno'],
-  ['Avocado', 160, 2, 1.8, 14.7, 80, 'avocado'],
+  ['Mela', 52, 0.3, 12, 0.2, 180, 'mela mele', null, null, 'mela/mele=180'],
+  ['Banana', 89, 1.1, 20, 0.3, 120, 'banana', null, null, 'banana/banane=120'],
+  ['Arancia', 47, 0.9, 9.4, 0.1, 160, 'arancia arance', null, null, 'arancia/arance=160'],
+  ['Pera', 57, 0.4, 12, 0.1, 170, 'pera pere', null, null, 'pera/pere=170'],
+  ['Fragole', 32, 0.7, 5.7, 0.3, 150, 'fragola fragole', null, null, 'fragola/fragole=15'],
+  ['Kiwi', 61, 1.1, 11.7, 0.5, 75, 'kiwi', null, null, 'kiwi/kiwi=75'],
+  ['Uva', 69, 0.7, 17.2, 0.2, 150, 'uva', null, null, 'grappolo/grappoli=150'],
+  ['Clementine / mandarini', 47, 0.9, 10.3, 0.2, 60, 'clementina mandarino mandarancio', null, null, 'clementina/clementine=60'],
+  ['Pesca', 39, 0.9, 8, 0.3, 150, 'pesca pesche nettarina pesca noce', null, null, 'pesca/pesche=150'],
+  ['Albicocche', 48, 1.4, 9.5, 0.4, 100, 'albicocca albicocche', null, null, 'albicocca/albicocche=40'],
+  ['Ciliegie', 63, 1.1, 14, 0.2, 150, 'ciliegia ciliegie', null, null, 'ciliegia/ciliegie=8'],
+  ['Prugne', 46, 0.7, 10, 0.3, 100, 'prugna prugne susine', null, null, 'prugna/prugne=50'],
+  ['Fichi', 74, 0.8, 16.3, 0.3, 100, 'fico fichi', null, null, 'fico/fichi=50'],
+  ["Fichi d'India", 41, 0.7, 9.6, 0.5, 100, 'fichi india', null, null, "fico d'India/fichi d'India=100"],
+  ['Ananas', 50, 0.5, 11.7, 0.1, 150, 'ananas', null, null, 'fetta/fette=100'],
+  ['Anguria', 30, 0.6, 7.2, 0.2, 300, 'anguria cocomero', null, null, 'fetta/fette=300'],
+  ['Melone', 34, 0.8, 7.3, 0.2, 200, 'melone', null, null, 'fetta/fette=150'],
+  ['Mango', 60, 0.8, 13.4, 0.4, 150, 'mango', null, null, 'mango/mango=200'],
+  ['Papaya', 43, 0.5, 9.8, 0.3, 150, 'papaya'],
+  ['Mirtilli', 57, 0.7, 12.1, 0.3, 100, 'mirtillo mirtilli', null, null, 'vaschetta/vaschette=125'],
+  ['Lamponi', 52, 1.2, 5.4, 0.7, 100, 'lampone lamponi', null, null, 'vaschetta/vaschette=125'],
+  ['More', 43, 1.4, 5, 0.5, 100, 'more rovo'],
+  ['Ribes', 56, 1.4, 7.7, 0.2, 100, 'ribes'],
+  ['Frutti di bosco misti', 45, 1, 7, 0.4, 100, 'frutti bosco misti surgelati'],
+  ['Nespole', 47, 0.4, 10.4, 0.2, 100, 'nespola nespole', null, null, 'nespola/nespole=30'],
+  ['Pompelmo', 42, 0.8, 9, 0.1, 200, 'pompelmo', null, null, 'pompelmo/pompelmi=250'],
+  ['Limone', 29, 1.1, 2.9, 0.3, 60, 'limone', null, null, 'limone/limoni=60'],
+  ['Lime', 30, 0.7, 8, 0.2, 50, 'lime'],
+  ['Cachi', 70, 0.6, 15, 0.2, 200, 'cachi kaki loti', null, null, 'caco/cachi=200'],
+  ['Melograno', 83, 1.7, 14.7, 1.2, 100, 'melograno melagrana'],
+  ['Litchi', 66, 0.8, 16.5, 0.4, 100, 'litchi lici'],
+  ['Frutto della passione', 97, 2.2, 13, 0.7, 50, 'maracuja passion fruit'],
+  ['Avocado', 160, 2, 1.8, 14.7, 80, 'avocado', null, null, 'avocado/avocado=150'],
   ['Cocco (polpa)', 354, 3.3, 6.2, 33.5, 30, 'cocco'],
+  ['Castagne', 196, 2, 42, 1.3, 100, 'castagne crude'],
+  ['Caldarroste', 245, 3.2, 53, 2.2, 100, 'castagne arrosto caldarroste'],
+  ['Castagne lesse', 130, 2, 27, 1.4, 100, 'castagne lesse ballotte'],
   ['Macedonia di frutta', 50, 0.6, 11, 0.2, 150, 'macedonia frutta'],
-  ['Datteri secchi', 282, 2.5, 67, 0.4, 30, 'datteri'],
+  ['Frutta sciroppata', 70, 0.4, 17, 0.1, 150, 'pesche sciroppate frutta sciroppo'],
+  ['Purea di frutta', 60, 0.3, 14, 0.1, 100, 'composta purea frutta mela frullata omogeneizzato', null, null, 'vasetto/vasetti=100'],
+  ['Datteri secchi', 282, 2.5, 67, 0.4, 30, 'datteri', null, null, 'dattero/datteri=8'],
+  ['Fichi secchi', 250, 3.3, 58, 0.9, 30, 'fichi secchi', null, null, 'fico/fichi=20'],
+  ['Prugne secche', 240, 2.2, 55, 0.4, 30, 'prugne secche', null, null, 'prugna/prugne=8'],
   ['Uvetta', 299, 3.1, 75, 0.5, 30, 'uvetta uva passa sultanina'],
-  ['Albicocche secche', 241, 3.4, 55, 0.5, 30, 'albicocche secche disidratate'],
-  ['Succo di limone', 22, 0.4, 6.6, 0.2, 15, 'limone succo', 'ml'],
+  ['Albicocche secche', 241, 3.4, 55, 0.5, 30, 'albicocche secche disidratate', null, null, 'albicocca/albicocche=8'],
+  ['Mirtilli rossi essiccati', 325, 0.1, 82, 1.4, 30, 'mirtilli rossi cranberry essiccati'],
+  ['Mango essiccato', 320, 2.5, 78, 1, 30, 'mango essiccato disidratato'],
+  ['Banana chips', 520, 2.3, 58, 34, 30, 'banana chips'],
+  ['Succo di limone', 22, 0.4, 6.6, 0.2, 15, 'limone succo', 'ml', null, 'cucchiaio/cucchiai=15'],
 
   // ---------- Frutta secca e semi ----------
-  ['Mandorle', 590, 21.5, 8, 50, 30, 'mandorla frutta secca'],
-  ['Noci', 670, 15, 7, 65, 30, 'noce frutta secca'],
-  ['Nocciole', 628, 15, 7, 61, 30, 'nocciola nocciole frutta secca'],
-  ['Pistacchi', 560, 20, 17, 45, 30, 'pistacchio pistacchi'],
-  ['Anacardi', 553, 18, 27, 44, 30, 'anacardi'],
-  ['Arachidi tostate', 590, 24.5, 13, 50, 30, 'noccioline arachidi'],
-  ['Burro di arachidi', 600, 25, 13, 50, 20, 'peanut butter'],
-  ['Semi di girasole', 584, 20.8, 11.4, 51.5, 20, 'semi girasole'],
-  ['Semi di chia', 486, 16.5, 7.7, 30.7, 15, 'semi chia'],
+  ['Mandorle', 590, 21.5, 8, 50, 30, 'mandorla mandorle frutta secca', null, null, 'manciata/manciate=30;mandorla/mandorle=1.2'],
+  ['Noci', 670, 15, 7, 65, 30, 'noce noci frutta secca', null, null, 'manciata/manciate=30;noce/noci=5'],
+  ['Nocciole', 628, 15, 7, 61, 30, 'nocciola nocciole frutta secca', null, null, 'manciata/manciate=30'],
+  ['Pistacchi', 560, 20, 17, 45, 30, 'pistacchio pistacchi', null, null, 'manciata/manciate=30'],
+  ['Anacardi', 553, 18, 27, 44, 30, 'anacardi', null, null, 'manciata/manciate=30'],
+  ['Arachidi tostate', 590, 24.5, 13, 50, 30, 'noccioline arachidi salate', null, null, 'manciata/manciate=30'],
+  ['Noci brasiliane', 659, 14, 4.2, 67, 30, 'noci brasiliane brasile'],
+  ['Noci macadamia', 718, 8, 5, 76, 30, 'noci macadamia'],
+  ['Noci pecan', 691, 9, 4, 72, 30, 'noci pecan'],
+  ['Pinoli', 673, 13.7, 9.4, 68.4, 10, 'pinoli', null, null, 'cucchiaio/cucchiai=10'],
+  ['Mix di frutta secca', 600, 18, 15, 50, 30, 'mix frutta secca misto', null, null, 'manciata/manciate=30'],
+  ['Burro di arachidi', 600, 25, 13, 50, 20, 'peanut butter', null, null, 'cucchiaio/cucchiai=16;cucchiaino/cucchiaini=6'],
+  ['Burro di mandorle', 614, 21, 9, 55.5, 15, 'burro mandorle crema', null, null, 'cucchiaio/cucchiai=16'],
+  ['Tahina', 595, 17, 10, 53.8, 15, 'tahina tahini sesamo', null, null, 'cucchiaio/cucchiai=15'],
+  ['Semi di girasole', 584, 20.8, 11.4, 51.5, 20, 'semi girasole', null, null, 'cucchiaio/cucchiai=10'],
+  ['Semi di zucca', 560, 30, 5, 49, 20, 'semi zucca', null, null, 'cucchiaio/cucchiai=10'],
+  ['Semi di chia', 486, 16.5, 7.7, 30.7, 15, 'semi chia', null, null, 'cucchiaio/cucchiai=12'],
+  ['Semi di lino', 534, 18, 1.6, 42, 10, 'semi lino', null, null, 'cucchiaio/cucchiai=10'],
+  ['Semi di sesamo', 573, 17.7, 11.7, 49.7, 10, 'sesamo', null, null, 'cucchiaio/cucchiai=9'],
 
   // ---------- Condimenti, salse, dolcificanti ----------
-  ["Olio extravergine d'oliva", 899, 0, 0, 99.9, 10, 'olio evo oliva'],
-  ['Olio di semi', 899, 0, 0, 99.9, 10, 'olio semi girasole mais arachidi'],
-  ['Aceto balsamico', 88, 0.5, 17, 0, 10, 'aceto balsamico glassa'],
-  ['Salsa di soia', 53, 8.1, 4.9, 0.6, 10, 'soia salsa', 'ml'],
-  ['Maionese', 700, 1.1, 1.5, 77, 15, 'maionese'],
-  ['Maionese light', 301, 0.8, 7, 30, 15, 'maionese light'],
-  ['Ketchup', 102, 1.2, 23.2, 0.1, 15, 'ketchup'],
-  ['Senape', 66, 4.4, 2.5, 4, 10, 'senape mostarda'],
-  ['Pesto alla genovese', 460, 5, 6, 46, 30, 'pesto basilico'],
+  ['Aceto balsamico', 88, 0.5, 17, 0, 10, 'aceto balsamico', 'ml', null, 'cucchiaio/cucchiai=15'],
+  ['Glassa di aceto balsamico', 250, 0.5, 60, 0, 10, 'glassa aceto balsamico crema', null, null, 'cucchiaio/cucchiai=15'],
+  ['Aceto di vino', 20, 0, 0.6, 0, 10, 'aceto vino mele', 'ml', null, 'cucchiaio/cucchiai=15'],
+  ['Salsa di soia', 53, 8.1, 4.9, 0.6, 10, 'soia salsa', 'ml', null, 'cucchiaio/cucchiai=15'],
+  ['Maionese', 700, 1.1, 1.5, 77, 15, 'maionese', null, null, 'cucchiaio/cucchiai=15'],
+  ['Maionese light', 301, 0.8, 7, 30, 15, 'maionese light', null, null, 'cucchiaio/cucchiai=15'],
+  ['Ketchup', 102, 1.2, 23.2, 0.1, 15, 'ketchup', null, null, 'cucchiaio/cucchiai=15'],
+  ['Senape', 66, 4.4, 2.5, 4, 10, 'senape mostarda', null, null, 'cucchiaino/cucchiaini=5'],
+  ['Salsa barbecue', 170, 1, 40, 0.5, 15, 'salsa barbecue bbq', null, null, 'cucchiaio/cucchiai=15'],
+  ['Salsa rosa', 470, 1.5, 9, 47, 15, 'salsa rosa cocktail', null, null, 'cucchiaio/cucchiai=15'],
+  ['Salsa tonnata', 450, 8, 3, 45, 20, 'salsa tonnata', null, null, 'cucchiaio/cucchiai=15'],
+  ['Salsa tzatziki', 95, 4, 4, 7, 30, 'tzatziki', null, null, 'cucchiaio/cucchiai=20'],
+  ['Salsa allo yogurt', 300, 2, 6, 30, 20, 'salsa yogurt kebab', null, null, 'cucchiaio/cucchiai=15'],
+  ['Pesto alla genovese', 460, 5, 6, 46, 30, 'pesto basilico', null, null, 'cucchiaio/cucchiai=15'],
+  ['Pesto rosso', 330, 5, 9, 30, 30, 'pesto rosso pomodori secchi', null, null, 'cucchiaio/cucchiai=15'],
   ['Sugo al pomodoro pronto', 57, 1.5, 7, 2.5, 100, 'sugo pomodoro basilico'],
+  ["Sugo all'arrabbiata pronto", 70, 1.5, 7, 4, 100, 'arrabbiata sugo'],
   ['Ragù alla bolognese (sugo)', 110, 6.5, 4, 7.5, 100, 'ragu sugo carne bolognese'],
   ['Besciamella', 131, 3.5, 9, 9, 50, 'besciamella'],
   ['Guacamole', 157, 2, 3, 14.7, 50, 'guacamole avocado'],
-  ['Zucchero', 400, 0, 100, 0, 5, 'zucchero bianco'],
-  ['Zucchero di canna', 380, 0, 98, 0, 5, 'zucchero canna grezzo'],
-  ['Miele', 320, 0.4, 80, 0, 10, 'miele'],
-  ["Sciroppo d'acero", 260, 0, 67, 0.1, 15, 'sciroppo acero'],
-  ['Marmellata / confettura', 250, 0.4, 61, 0.1, 20, 'marmellata confettura'],
-  ['Crema spalmabile nocciole e cacao', 539, 6.3, 57.5, 30.9, 15, 'nutella crema nocciole cacao'],
-  ['Cacao amaro in polvere', 355, 20, 12, 21, 5, 'cacao amaro polvere'],
-  ['Proteine whey in polvere', 377, 75, 8, 5, 30, 'proteine whey integratore'],
+  ['Dado da brodo', 250, 10, 20, 15, 5, 'dado brodo granulare', null, null, 'dado/dadi=10'],
+  ['Brodo vegetale', 8, 0.5, 1, 0.2, 250, 'brodo vegetale', 'ml', null, 'tazza/tazze=250'],
+  ['Brodo di carne', 15, 1.5, 0.5, 0.8, 250, 'brodo carne pollo', 'ml', null, 'tazza/tazze=250'],
+  ['Zucchero', 400, 0, 100, 0, 5, 'zucchero bianco', null, null, 'cucchiaino/cucchiaini=5;bustina/bustine=4'],
+  ['Zucchero di canna', 380, 0, 98, 0, 5, 'zucchero canna grezzo', null, null, 'cucchiaino/cucchiaini=5;bustina/bustine=4'],
+  ['Zucchero a velo', 398, 0, 99.8, 0, 5, 'zucchero velo'],
+  ['Dolcificante', 0, 0, 0, 0, 1, 'dolcificante stevia saccarina aspartame eritritolo', null, null, 'bustina/bustine=1'],
+  ['Miele', 320, 0.4, 80, 0, 10, 'miele', null, null, 'cucchiaino/cucchiaini=7;cucchiaio/cucchiai=20'],
+  ["Sciroppo d'acero", 260, 0, 67, 0.1, 15, 'sciroppo acero', 'ml', null, 'cucchiaio/cucchiai=15'],
+  ["Sciroppo d'agave", 310, 0, 76, 0, 10, 'agave sciroppo', null, null, 'cucchiaio/cucchiai=15'],
+  ['Marmellata / confettura', 250, 0.4, 61, 0.1, 20, 'marmellata confettura', null, null, 'cucchiaino/cucchiaini=10'],
+  ['Marmellata senza zuccheri aggiunti', 150, 0.5, 35, 0.2, 20, 'marmellata senza zuccheri light composta', null, null, 'cucchiaino/cucchiaini=10'],
+  ['Crema spalmabile nocciole e cacao', 539, 6.3, 57.5, 30.9, 15, 'nutella crema nocciole cacao *', null, null, 'cucchiaino/cucchiaini=10'],
+  ['Crema di pistacchio', 560, 10, 45, 37, 15, 'crema pistacchio spalmabile', null, null, 'cucchiaino/cucchiaini=10'],
+  ['Cacao amaro in polvere', 355, 20, 12, 21, 5, 'cacao amaro polvere', null, null, 'cucchiaino/cucchiaini=4'],
+  ['Proteine whey in polvere', 377, 75, 8, 5, 30, 'proteine whey integratore', null, null, 'misurino/misurini=30'],
+  ['Proteine vegetali in polvere', 380, 75, 6, 7, 30, 'proteine vegetali piselli soia polvere', null, null, 'misurino/misurini=30'],
+  ['Maltodestrine', 380, 0, 95, 0, 30, 'maltodestrine carboidrati integratore'],
+  ['Gel energetico', 260, 0, 65, 0, 40, 'gel energetico sport', null, null, 'gel/gel=40'],
+  ['Bevanda proteica pronta', 60, 10, 4, 0.5, 330, 'proteine shake protein drink bevanda', 'ml', null, 'bottiglia/bottiglie=330'],
 
   // ---------- Dolci e snack ----------
-  ['Cioccolato fondente 70%', 575, 8, 33, 42, 20, 'cioccolato fondente'],
-  ['Cioccolato al latte', 535, 7.6, 57, 30, 20, 'cioccolato latte'],
-  ['Cioccolato bianco', 539, 6, 59, 31, 20, 'cioccolato bianco'],
-  ['Gelato alla crema', 207, 3.5, 24, 11, 100, 'gelato crema fiordilatte vaniglia'],
-  ['Gelato al cioccolato', 216, 3.8, 28, 11, 100, 'gelato cioccolato'],
-  ['Sorbetto / gelato alla frutta', 130, 0.5, 31, 0.5, 100, 'sorbetto gelato frutta limone fragola'],
-  ['Ghiacciolo', 80, 0, 20, 0, 60, 'ghiacciolo'],
-  ['Tiramisù', 283, 5.5, 28, 16.5, 120, 'tiramisu'],
+  ['Cioccolato fondente 70%', 575, 8, 33, 42, 20, 'cioccolato fondente', null, null, 'quadretto/quadretti=5'],
+  ['Cioccolato fondente 85%', 600, 11, 20, 50, 20, 'cioccolato fondente extra', null, null, 'quadretto/quadretti=5'],
+  ['Cioccolato al latte', 535, 7.6, 57, 30, 20, 'cioccolato latte', null, null, 'quadretto/quadretti=5'],
+  ['Cioccolato bianco', 539, 6, 59, 31, 20, 'cioccolato bianco', null, null, 'quadretto/quadretti=5'],
+  ['Cioccolatino ripieno', 540, 6, 52, 33, 12, 'cioccolatino pralina baci', null, null, 'cioccolatino/cioccolatini=12'],
+  ['Barretta al cioccolato e caramello', 450, 4, 70, 17, 50, 'barretta cioccolato caramello mars snickers twix', null, null, 'barretta/barrette=50'],
+  ['Gelato alla crema', 207, 3.5, 24, 11, 100, 'gelato crema fiordilatte vaniglia', null, null, 'pallina/palline=40'],
+  ['Gelato al cioccolato', 216, 3.8, 28, 11, 100, 'gelato cioccolato', null, null, 'pallina/palline=40'],
+  ['Gelato alla nocciola', 230, 4.5, 24, 13, 100, 'gelato nocciola pistacchio stracciatella', null, null, 'pallina/palline=40'],
+  ['Sorbetto / gelato alla frutta', 130, 0.5, 31, 0.5, 100, 'sorbetto gelato frutta limone fragola', null, null, 'pallina/palline=40'],
+  ['Cono gelato confezionato', 280, 4, 33, 14.5, 75, 'cono gelato confezionato cornetto', null, null, 'cono/coni=75'],
+  ['Ghiacciolo', 80, 0, 20, 0, 60, 'ghiacciolo', null, null, 'ghiacciolo/ghiaccioli=60'],
+  ['Granita', 85, 0, 21, 0, 200, 'granita limone'],
+  ['Frozen yogurt', 130, 3.5, 25, 2, 150, 'frozen yogurt'],
+  ['Tiramisù', 283, 5.5, 28, 16.5, 120, 'tiramisu', null, null, 'porzione/porzioni=120'],
   ['Panna cotta', 218, 3, 20, 14, 120, 'panna cotta'],
-  ['Panettone', 371, 7, 52, 15, 80, 'panettone'],
-  ['Pandoro', 409, 8, 56, 17, 80, 'pandoro'],
-  ['Torta di mele', 270, 4, 40, 10.5, 100, 'torta mele'],
-  ['Crostata di marmellata', 380, 5.5, 58, 14, 80, 'crostata'],
-  ['Cannolo siciliano', 350, 7, 40, 18, 100, 'cannolo cannoli'],
-  ['Bombolone / krapfen alla crema', 349, 6, 44, 16.5, 80, 'bombolone krapfen'],
-  ['Ciambella / donut', 421, 5.5, 48, 23, 60, 'ciambella donut'],
-  ['Caramelle', 390, 0, 97, 0, 10, 'caramelle'],
+  ['Cheesecake', 320, 5.5, 26, 22, 120, 'cheesecake', null, null, 'fetta/fette=120'],
+  ['Torta al cioccolato', 400, 5, 50, 20, 100, 'torta cioccolato sacher tenerina', null, null, 'fetta/fette=90'],
+  ['Torta di mele', 270, 4, 40, 10.5, 100, 'torta mele', null, null, 'fetta/fette=100'],
+  ['Torta margherita / ciambellone', 380, 7, 55, 14.5, 80, 'torta margherita ciambellone pan di spagna', null, null, 'fetta/fette=70'],
+  ['Torta della nonna', 350, 7, 45, 15.5, 100, 'torta nonna crema pinoli', null, null, 'fetta/fette=100'],
+  ['Crostata di marmellata', 380, 5.5, 58, 14, 80, 'crostata', null, null, 'fetta/fette=80'],
+  ['Strudel di mele', 260, 3, 35, 12, 100, 'strudel', null, null, 'fetta/fette=100'],
+  ['Brownie', 450, 6, 55, 23, 60, 'brownie', null, null, 'quadrotto/quadrotti=60'],
+  ['Panettone', 371, 7, 52, 15, 80, 'panettone', null, null, 'fetta/fette=80'],
+  ['Pandoro', 409, 8, 56, 17, 80, 'pandoro', null, null, 'fetta/fette=80'],
+  ['Colomba', 410, 8, 54, 18, 80, 'colomba pasqua pasquale', null, null, 'fetta/fette=80'],
+  ['Torrone', 450, 8, 65, 17, 30, 'torrone mandorle'],
+  ['Cannolo siciliano', 350, 7, 40, 18, 100, 'cannolo cannoli', null, null, 'cannolo/cannoli=100'],
+  ['Babà al rum', 270, 4.5, 45, 7, 80, 'baba rum', null, null, 'babà/babà=60'],
+  ['Sfogliatella', 380, 7, 47, 18, 100, 'sfogliatella riccia frolla', null, null, 'sfogliatella/sfogliatelle=100'],
+  ['Pastiera napoletana', 330, 7, 45, 13.5, 120, 'pastiera', null, null, 'fetta/fette=120'],
+  ['Cassata siciliana', 380, 6, 55, 15, 120, 'cassata', null, null, 'fetta/fette=120'],
+  ['Pasticciotto', 400, 6, 50, 19, 90, 'pasticciotto leccese', null, null, 'pasticciotto/pasticciotti=90'],
+  ['Maritozzo con la panna', 360, 7, 40, 19, 100, 'maritozzo panna', null, null, 'maritozzo/maritozzi=100'],
+  ['Bombolone / krapfen alla crema', 349, 6, 44, 16.5, 80, 'bombolone krapfen', null, null, 'bombolone/bomboloni=80'],
+  ['Ciambella / donut', 421, 5.5, 48, 23, 60, 'ciambella donut', null, null, 'ciambella/ciambelle=60'],
+  ['Chiacchiere', 480, 6, 60, 24, 50, 'chiacchiere frappe bugie carnevale'],
+  ['Frittelle', 380, 6, 45, 19, 50, 'frittelle castagnole carnevale', null, null, 'frittella/frittelle=20'],
+  ['Zeppole di San Giuseppe', 350, 6, 40, 18, 100, 'zeppole', null, null, 'zeppola/zeppole=100'],
+  ['Profiteroles', 330, 5, 28, 22, 120, 'profiteroles'],
+  ['Bignè alla crema', 290, 6, 30, 16, 40, 'bigne crema', null, null, 'bignè/bignè=20'],
+  ['Meringhe', 390, 5, 92, 0.2, 10, 'meringhe', null, null, 'meringa/meringhe=5'],
+  ['Crêpe alla crema di nocciole', 330, 6, 40, 16, 120, 'crepe nutella crespella dolce', null, null, 'crêpe/crêpe=120'],
+  ['Waffle', 290, 7, 36, 13, 75, 'waffle waffel gaufre', null, null, 'waffle/waffle=75'],
+  ['Crema pasticcera', 160, 4, 22, 6, 50, 'crema pasticcera'],
+  ['Caramelle', 390, 0, 97, 0, 10, 'caramelle', null, null, 'caramella/caramelle=5'],
+  ['Caramelle gommose', 340, 6, 77, 0.2, 20, 'caramelle gommose orsetti gelatine', null, null, 'caramella/caramelle=3'],
+  ['Marshmallow', 320, 2, 80, 0.2, 20, 'marshmallow'],
   ['Popcorn al microonde', 490, 7.6, 55, 27, 30, 'popcorn pop corn'],
+  ['Patatine in busta', 535, 6.5, 50, 34, 30, 'chips patatine', null, null, 'pacchetto piccolo/pacchetti piccoli=25'],
+  ['Patatine al forno (in busta)', 440, 7, 70, 15, 30, 'patatine forno light'],
   ['Tortilla chips', 483, 7, 62, 23, 30, 'tortilla chips nachos'],
+  ['Snack di mais', 520, 6, 57, 30, 30, 'snack mais fonzies'],
+  ['Salatini', 480, 8, 62, 22, 25, 'salatini tuc'],
+  ['Pizzette', 380, 9, 50, 16, 30, 'pizzette mini', null, null, 'pizzetta/pizzette=10'],
 
-  // ---------- Piatti pronti (valori per 100 g di piatto) ----------
-  ['Pasta al pomodoro', 132, 4.5, 23, 2.5, 300, 'pasta spaghetti penne pomodoro sugo piatto'],
-  ['Pasta al ragù', 152, 7, 21, 4.5, 300, 'pasta tagliatelle ragu bolognese piatto'],
-  ['Pasta al pesto', 218, 6, 26, 10, 300, 'pasta trofie pesto piatto'],
-  ['Spaghetti alla carbonara', 226, 9, 25, 10, 300, 'carbonara spaghetti piatto'],
-  ["Pasta all'amatriciana", 181, 6.5, 22, 7.5, 300, 'amatriciana bucatini piatto'],
-  ['Pasta cacio e pepe', 259, 11, 28, 11.5, 250, 'cacio pepe piatto'],
-  ['Spaghetti aglio, olio e peperoncino', 209, 5, 27, 9, 250, 'aglio olio peperoncino piatto'],
-  ['Pasta alle vongole', 160, 8, 23, 4, 300, 'spaghetti vongole piatto'],
-  ['Pasta e fagioli', 109, 5, 16, 2.8, 300, 'pasta fagioli minestra'],
-  ['Lasagne alla bolognese', 160, 8.5, 14, 8, 300, 'lasagne lasagna piatto'],
-  ['Risotto alla milanese', 147, 3.5, 22, 5, 300, 'risotto zafferano milanese'],
-  ['Risotto ai funghi', 139, 3.5, 21, 4.5, 300, 'risotto funghi'],
-  ['Insalata di riso', 169, 5.5, 22, 6.5, 250, 'insalata riso freddo'],
-  ['Insalata di pasta', 183, 6, 25, 6.5, 250, 'pasta fredda insalata'],
-  ['Minestrone di verdure', 50, 2, 7, 1.5, 300, 'minestrone zuppa verdure'],
-  ['Zuppa di legumi', 82, 5, 11, 2, 300, 'zuppa legumi minestra'],
-  ['Vellutata di zucca', 51, 1.2, 7, 2, 300, 'vellutata crema zucca'],
-  ['Pizza margherita', 260, 11, 33, 9, 300, 'pizza margherita'],
-  ['Pizza marinara', 230, 7, 38, 5.5, 300, 'pizza marinara'],
-  ['Pizza capricciosa', 245, 11, 30, 9, 330, 'pizza capricciosa prosciutto funghi'],
-  ['Pizza diavola', 270, 11.5, 30, 11.5, 320, 'pizza diavola salame piccante'],
-  ['Pizza ai quattro formaggi', 285, 13, 30, 12.5, 320, 'pizza quattro 4 formaggi'],
-  ['Calzone', 250, 11, 30, 9, 350, 'calzone'],
-  ['Panzerotto fritto', 291, 9, 30, 15, 150, 'panzerotto'],
-  ['Arancino al ragù', 247, 7, 30, 11, 200, 'arancino arancina'],
-  ['Supplì', 240, 7.5, 29, 10.5, 120, 'suppli'],
-  ['Piadina farcita', 269, 12, 27, 12.5, 250, 'piadina crudo squacquerone rucola'],
-  ['Panino con prosciutto crudo', 269, 14, 33, 9, 150, 'panino prosciutto'],
-  ['Toast prosciutto e formaggio', 272, 14, 28, 11.5, 120, 'toast'],
-  ['Tramezzino al tonno', 253, 10, 25, 12.5, 100, 'tramezzino tonno'],
-  ['Hamburger (panino completo)', 250, 13, 28, 9.5, 220, 'hamburger panino burger fast food'],
-  ['Cheeseburger', 268, 14, 27, 11.5, 130, 'cheeseburger fast food'],
-  ['Kebab', 214, 12, 20, 9.5, 300, 'kebab piadina pita'],
-  ['Nuggets di pollo', 296, 15.5, 16.5, 18.5, 120, 'nuggets pollo crocchette'],
-  ['Cotoletta alla milanese', 240, 20, 12, 12.5, 150, 'cotoletta impanata'],
-  ['Polpette al sugo', 180, 12, 7, 11.5, 200, 'polpette'],
+  // ---------- Primi piatti (valori per 100 g di piatto) ----------
+  ['Pasta al pomodoro', 132, 4.5, 23, 2.5, 300, 'pasta spaghetti penne pomodoro sugo piatto', null, null, 'piatto/piatti=300'],
+  ['Pasta al ragù', 152, 7, 21, 4.5, 300, 'pasta tagliatelle ragu bolognese piatto', null, null, 'piatto/piatti=300'],
+  ['Pasta al pesto', 218, 6, 26, 10, 300, 'pasta trofie pesto piatto', null, null, 'piatto/piatti=300'],
+  ['Spaghetti alla carbonara', 226, 9, 25, 10, 300, 'carbonara spaghetti piatto', null, null, 'piatto/piatti=300'],
+  ["Pasta all'amatriciana", 181, 6.5, 22, 7.5, 300, 'amatriciana bucatini piatto', null, null, 'piatto/piatti=300'],
+  ['Pasta alla gricia', 260, 9.5, 27, 12.5, 250, 'gricia', null, null, 'piatto/piatti=250'],
+  ['Pasta cacio e pepe', 259, 11, 28, 11.5, 250, 'cacio pepe piatto', null, null, 'piatto/piatti=250'],
+  ['Spaghetti aglio, olio e peperoncino', 209, 5, 27, 9, 250, 'aglio olio peperoncino piatto', null, null, 'piatto/piatti=250'],
+  ['Pasta alla puttanesca', 150, 4.5, 23, 4.5, 300, 'puttanesca', null, null, 'piatto/piatti=300'],
+  ["Pasta all'arrabbiata", 140, 4, 24, 3, 300, 'arrabbiata penne', null, null, 'piatto/piatti=300'],
+  ['Pasta alla norma', 160, 5, 22, 6, 300, 'norma melanzane ricotta salata', null, null, 'piatto/piatti=300'],
+  ['Pasta al tonno', 165, 8, 22, 5, 300, 'pasta tonno', null, null, 'piatto/piatti=300'],
+  ['Pasta con zucchine', 150, 4.5, 22, 5, 300, 'pasta zucchine', null, null, 'piatto/piatti=300'],
+  ['Pasta al salmone', 185, 7, 22, 7.5, 300, 'pasta salmone panna', null, null, 'piatto/piatti=300'],
+  ['Pasta panna e prosciutto', 200, 7, 23, 9, 300, 'pasta panna prosciutto piselli', null, null, 'piatto/piatti=300'],
+  ['Pasta alle vongole', 160, 8, 23, 4, 300, 'spaghetti vongole piatto', null, null, 'piatto/piatti=300'],
+  ['Pasta allo scoglio', 140, 8, 21, 3, 350, 'scoglio frutti mare pescatora', null, null, 'piatto/piatti=350'],
+  ['Pasta al nero di seppia', 150, 7, 22, 3.5, 300, 'nero seppia', null, null, 'piatto/piatti=300'],
+  ['Pasta con le sarde', 180, 8, 24, 6, 300, 'pasta sarde', null, null, 'piatto/piatti=300'],
+  ['Pasta e fagioli', 109, 5, 16, 2.8, 300, 'pasta fagioli minestra', null, null, 'piatto/piatti=300'],
+  ['Pasta e ceci', 120, 5, 18, 3, 300, 'pasta ceci minestra', null, null, 'piatto/piatti=300'],
+  ['Pasta e patate', 115, 3.5, 19, 3, 300, 'pasta patate', null, null, 'piatto/piatti=300'],
+  ['Pasta al forno', 190, 9, 20, 8, 300, 'pasta forno timballo', null, null, 'porzione/porzioni=300'],
+  ['Lasagne alla bolognese', 160, 8.5, 14, 8, 300, 'lasagne lasagna piatto', null, null, 'porzione/porzioni=300'],
+  ['Lasagne vegetariane', 140, 6, 14, 6.5, 300, 'lasagne verdure vegetariane', null, null, 'porzione/porzioni=300'],
+  ['Cannelloni ricotta e spinaci', 165, 7.5, 15, 8.5, 300, 'cannelloni', null, null, 'porzione/porzioni=300'],
+  ['Tortellini in brodo', 85, 4, 11, 2.7, 350, 'tortellini brodo cappelletti', null, null, 'piatto/piatti=350'],
+  ['Tortellini panna e prosciutto', 240, 9, 25, 11.5, 300, 'tortellini panna', null, null, 'piatto/piatti=300'],
+  ['Ravioli burro e salvia', 240, 9, 30, 9.5, 250, 'ravioli burro salvia', null, null, 'piatto/piatti=250'],
+  ['Gnocchi al pomodoro', 135, 3.5, 25, 2.5, 300, 'gnocchi pomodoro', null, null, 'piatto/piatti=300'],
+  ['Gnocchi alla sorrentina', 160, 6, 24, 4.5, 300, 'gnocchi sorrentina', null, null, 'piatto/piatti=300'],
+  ['Gnocchi al pesto', 210, 4.5, 26, 10, 300, 'gnocchi pesto', null, null, 'piatto/piatti=300'],
+  ['Gnocchi ai quattro formaggi', 230, 8, 25, 11, 300, 'gnocchi formaggi', null, null, 'piatto/piatti=300'],
+  ['Orecchiette con cime di rapa', 160, 5.5, 22, 5.5, 300, 'orecchiette cime rapa', null, null, 'piatto/piatti=300'],
+  ['Tagliatelle ai funghi', 170, 6, 24, 5.5, 300, 'tagliatelle funghi', null, null, 'piatto/piatti=300'],
+  ['Pappardelle al cinghiale', 180, 9, 22, 6, 300, 'pappardelle cinghiale ragu', null, null, 'piatto/piatti=300'],
+  ['Pizzoccheri', 190, 7, 20, 9, 300, 'pizzoccheri valtellina', null, null, 'piatto/piatti=300'],
+  ['Risotto alla milanese', 147, 3.5, 22, 5, 300, 'risotto zafferano milanese', null, null, 'piatto/piatti=300'],
+  ['Risotto ai funghi', 139, 3.5, 21, 4.5, 300, 'risotto funghi', null, null, 'piatto/piatti=300'],
+  ['Risotto alla zucca', 130, 3, 21, 4, 300, 'risotto zucca', null, null, 'piatto/piatti=300'],
+  ['Risotto alla pescatora', 130, 7, 20, 2.5, 300, 'risotto pescatora mare', null, null, 'piatto/piatti=300'],
+  ['Risotto alle verdure', 125, 3, 21, 3.5, 300, 'risotto verdure primavera', null, null, 'piatto/piatti=300'],
+  ['Riso alla cantonese', 175, 5.5, 26, 5.5, 300, 'riso cantonese', null, null, 'piatto/piatti=300'],
+  ['Paella', 160, 9, 19, 5, 350, 'paella', null, null, 'piatto/piatti=350'],
+  ['Insalata di riso', 169, 5.5, 22, 6.5, 250, 'insalata riso freddo', null, null, 'piatto/piatti=250'],
+  ['Insalata di pasta', 183, 6, 25, 6.5, 250, 'pasta fredda insalata', null, null, 'piatto/piatti=250'],
+  ['Insalata di farro', 150, 5, 22, 5, 250, 'insalata farro', null, null, 'piatto/piatti=250'],
+  ['Cous cous con verdure', 140, 4, 22, 4, 300, 'cous cous verdure', null, null, 'piatto/piatti=300'],
+  ['Pastina in brodo', 60, 2.5, 10, 1, 300, 'pastina brodo minestrina', null, null, 'piatto/piatti=300'],
+  ['Minestrone di verdure', 50, 2, 7, 1.5, 300, 'minestrone zuppa verdure', null, null, 'piatto/piatti=300'],
+  ['Passato di verdure', 40, 1.5, 6, 1.2, 300, 'passato verdure crema', null, null, 'piatto/piatti=300'],
+  ['Zuppa di legumi', 82, 5, 11, 2, 300, 'zuppa legumi minestra', null, null, 'piatto/piatti=300'],
+  ['Zuppa di farro', 80, 3, 13, 1.8, 300, 'zuppa farro', null, null, 'piatto/piatti=300'],
+  ['Ribollita', 90, 4, 12, 3, 300, 'ribollita', null, null, 'piatto/piatti=300'],
+  ['Pappa al pomodoro', 95, 3, 14, 3, 300, 'pappa pomodoro', null, null, 'piatto/piatti=300'],
+  ['Vellutata di zucca', 51, 1.2, 7, 2, 300, 'vellutata crema zucca', null, null, 'piatto/piatti=300'],
+  ['Polenta con ragù', 110, 4, 14, 4, 300, 'polenta ragu sugo', null, null, 'piatto/piatti=300'],
+  ['Polenta concia', 180, 7, 14, 10.5, 300, 'polenta concia formaggio', null, null, 'piatto/piatti=300'],
+
+  // ---------- Secondi e contorni (valori per 100 g di piatto) ----------
+  ['Cotoletta alla milanese', 240, 20, 12, 12.5, 150, 'cotoletta impanata vitello', null, null, 'cotoletta/cotolette=150'],
+  ['Scaloppine al limone', 175, 20, 4, 9, 150, 'scaloppine limone vino'],
+  ['Saltimbocca alla romana', 190, 22, 1, 11, 150, 'saltimbocca'],
+  ['Ossobuco alla milanese', 150, 19, 3, 6.5, 300, 'ossobuco gremolata'],
+  ['Vitello tonnato', 190, 18, 1, 12.5, 150, 'vitello tonnato'],
   ['Arrosto di vitello', 151, 26, 0.5, 5, 150, 'arrosto vitello'],
+  ['Arrosto di maiale', 190, 27, 0.5, 9, 150, 'arrosto maiale'],
   ['Pollo arrosto con pelle', 213, 25, 0, 12.5, 200, 'pollo arrosto girarrosto'],
+  ['Pollo arrosto senza pelle', 165, 29, 0, 5.5, 150, 'pollo arrosto senza pelle'],
+  ['Pollo alla cacciatora', 140, 16, 3, 7, 250, 'pollo cacciatora'],
+  ['Pollo al curry', 150, 12, 5, 9, 250, 'pollo curry'],
+  ['Pollo alle mandorle', 160, 13, 9, 8, 250, 'pollo mandorle cinese'],
+  ['Maiale in agrodolce', 230, 11, 22, 11, 250, 'agrodolce maiale cinese'],
+  ['Spezzatino con patate', 130, 11, 8, 6, 300, 'spezzatino'],
+  ['Brasato al vino', 170, 24, 2, 7, 150, 'brasato stracotto'],
+  ['Bollito misto', 200, 25, 0, 11, 200, 'bollito misto lesso'],
+  ['Involtini di carne', 200, 20, 3, 12, 150, 'involtini carne'],
+  ['Polpettone', 220, 15, 7, 14.5, 150, 'polpettone', null, null, 'fetta/fette=100'],
+  ['Polpette al sugo', 180, 12, 7, 11.5, 200, 'polpette', null, null, 'polpetta/polpette=40'],
+  ['Carpaccio di manzo condito', 180, 22, 0.5, 10, 120, 'carpaccio rucola grana'],
+  ['Tartare di manzo', 150, 20, 1, 7.5, 150, 'tartare battuta'],
+  ['Chili con carne', 130, 9, 10, 6, 300, 'chili carne'],
+  ['Frittata', 200, 13, 1, 16, 150, 'frittata omelette formaggio'],
   ['Parmigiana di melanzane', 159, 7, 8, 11, 250, 'parmigiana melanzane'],
+  ['Melanzane ripiene', 150, 6, 9, 10, 200, 'melanzane ripiene'],
+  ['Peperoni ripieni', 140, 6, 12, 7.5, 250, 'peperoni ripieni'],
+  ['Zucchine ripiene', 120, 7, 7, 7, 250, 'zucchine ripiene'],
+  ['Mozzarella in carrozza', 300, 13, 25, 16, 150, 'mozzarella carrozza'],
+  ['Fiori di zucca fritti', 250, 7, 20, 16, 100, 'fiori zucca fritti', null, null, 'fiore/fiori=30'],
+  ['Olive ascolane', 290, 9, 18, 20, 100, 'olive ascolane', null, null, 'oliva/olive=15'],
+  ['Baccalà alla vicentina', 180, 20, 2, 10, 200, 'baccala vicentina'],
+  ['Baccalà fritto', 230, 18, 12, 12, 150, 'baccala fritto pastella'],
+  ['Fritto misto di mare', 260, 15, 15, 15, 200, 'fritto misto pesce frittura paranza'],
+  ['Insalata di mare', 100, 15, 2, 3.5, 150, 'insalata mare'],
+  ['Polpo e patate', 110, 9, 9, 4, 250, 'polpo patate insalata'],
+  ['Cozze alla marinara', 100, 11, 4, 4.5, 300, 'cozze marinara impepata soute'],
+  ["Spigola all'acqua pazza", 120, 18, 2, 4.5, 250, 'acqua pazza branzino spigola'],
+  ['Sarde a beccafico', 240, 15, 12, 14.5, 150, 'sarde beccafico'],
   ['Caponata', 110, 1.5, 9, 7.5, 150, 'caponata'],
   ['Peperonata', 78, 1.2, 6, 5.5, 150, 'peperonata'],
+  ['Verdure grigliate miste', 80, 1.5, 5, 6, 150, 'verdure grigliate miste'],
+  ['Insalata mista condita', 60, 1, 2.5, 5, 150, 'insalata condita olio'],
   ['Insalata caprese', 159, 9, 2.5, 12.5, 200, 'caprese pomodoro mozzarella'],
-  ['Sushi nigiri al salmone', 150, 7, 25, 2.5, 150, 'sushi nigiri'],
-  ['Sushi uramaki', 165, 5, 28, 3.5, 200, 'sushi maki uramaki california roll'],
-  ['Poke bowl al salmone', 150, 8, 18, 5, 400, 'poke bowl salmone'],
+  ['Insalata greca', 110, 4, 4, 9, 250, 'insalata greca feta'],
+  ['Caesar salad', 150, 9, 6, 10, 300, 'caesar salad pollo'],
+  ['Insalata nizzarda', 110, 7, 6, 6.5, 300, 'nizzarda tonno uova'],
+  ['Insalatona con tonno', 95, 7, 4, 6, 350, 'insalatona tonno'],
+  ['Quiche / torta salata', 280, 9, 18, 19.5, 150, 'torta salata quiche', null, null, 'fetta/fette=120'],
+
+  // ---------- Pizza, panini e cibo di strada (valori per 100 g) ----------
+  ['Pizza margherita', 260, 11, 33, 9, 300, 'pizza margherita *', null, null, 'pizza/pizze=300;trancio/tranci=150'],
+  ['Pizza marinara', 230, 7, 38, 5.5, 300, 'pizza marinara', null, null, 'pizza/pizze=300'],
+  ['Pizza capricciosa', 245, 11, 30, 9, 330, 'pizza capricciosa prosciutto funghi carciofi', null, null, 'pizza/pizze=330'],
+  ['Pizza quattro stagioni', 240, 11, 29, 8.5, 330, 'pizza quattro 4 stagioni', null, null, 'pizza/pizze=330'],
+  ['Pizza diavola', 270, 11.5, 30, 11.5, 320, 'pizza diavola salame piccante', null, null, 'pizza/pizze=320'],
+  ['Pizza ai quattro formaggi', 285, 13, 30, 12.5, 320, 'pizza quattro 4 formaggi', null, null, 'pizza/pizze=320'],
+  ['Pizza bufala', 265, 11.5, 32, 10, 320, 'pizza bufala', null, null, 'pizza/pizze=320'],
+  ['Pizza prosciutto e funghi', 245, 11.5, 31, 8.5, 320, 'pizza prosciutto funghi', null, null, 'pizza/pizze=320'],
+  ['Pizza wurstel e patatine', 290, 10, 33, 13, 330, 'pizza wurstel patatine', null, null, 'pizza/pizze=330'],
+  ['Pizza ortolana', 220, 9, 30, 7.5, 330, 'pizza ortolana verdure vegetariana', null, null, 'pizza/pizze=330'],
+  ['Pizza tonno e cipolla', 250, 13, 30, 8.5, 330, 'pizza tonno cipolla', null, null, 'pizza/pizze=330'],
+  ['Pizza al taglio rossa', 240, 6.5, 36, 7.5, 150, 'pizza taglio rossa pomodoro', null, null, 'trancio/tranci=150'],
+  ['Pizza al taglio margherita', 255, 9, 33, 9.5, 150, 'pizza taglio margherita', null, null, 'trancio/tranci=150'],
+  ['Pizza fritta', 300, 9, 35, 13.5, 250, 'pizza fritta', null, null, 'pizza/pizze=250'],
+  ['Calzone', 250, 11, 30, 9, 350, 'calzone', null, null, 'calzone/calzoni=350'],
+  ['Panzerotto fritto', 291, 9, 30, 15, 150, 'panzerotto', null, null, 'panzerotto/panzerotti=150'],
+  ['Focaccia farcita', 290, 11, 33, 12.5, 200, 'focaccia farcita', null, null, 'pezzo/pezzi=200'],
+  ['Focaccia barese', 260, 6, 38, 9, 150, 'focaccia barese pomodorini'],
+  ['Farinata / cecina', 230, 8, 22, 12.5, 150, 'farinata cecina'],
+  ['Gnocco fritto', 380, 8, 45, 18.5, 100, 'gnocco fritto torta fritta'],
+  ['Tigelle', 300, 8, 50, 7, 40, 'tigelle crescentine', null, null, 'tigella/tigelle=35'],
+  ['Pane e panelle', 300, 9, 35, 13.5, 200, 'pane panelle'],
+  ['Arancino al ragù', 247, 7, 30, 11, 200, 'arancino arancina', null, null, 'arancino/arancini=200'],
+  ['Supplì', 240, 7.5, 29, 10.5, 120, 'suppli', null, null, 'supplì/supplì=120'],
+  ['Piadina farcita', 269, 12, 27, 12.5, 250, 'piadina crudo squacquerone rucola', null, null, 'piadina/piadine=250'],
+  ['Piadina cotto e formaggio', 290, 13, 30, 13, 220, 'piadina cotto formaggio', null, null, 'piadina/piadine=220'],
+  ['Crêpe salata prosciutto e formaggio', 220, 11, 20, 10.5, 200, 'crepe salata crespella', null, null, 'crêpe/crêpe=200'],
+  ['Panino con prosciutto crudo', 269, 14, 33, 9, 150, 'panino prosciutto', null, null, 'panino/panini=150'],
+  ['Panino con cotoletta', 260, 14, 30, 9, 250, 'panino cotoletta', null, null, 'panino/panini=250'],
+  ['Panino con porchetta', 290, 15, 28, 13, 200, 'panino porchetta', null, null, 'panino/panini=200'],
+  ['Panino con salame', 330, 13, 34, 15.5, 150, 'panino salame', null, null, 'panino/panini=150'],
+  ['Panino con mortadella', 320, 11, 33, 16, 150, 'panino mortadella', null, null, 'panino/panini=150'],
+  ['Panino con bresaola', 240, 17, 33, 4.5, 150, 'panino bresaola', null, null, 'panino/panini=150'],
+  ['Club sandwich', 240, 13, 20, 12, 250, 'club sandwich', null, null, 'sandwich/sandwich=250'],
+  ['Toast prosciutto e formaggio', 272, 14, 28, 11.5, 120, 'toast', null, null, 'toast/toast=120'],
+  ['Tramezzino al tonno', 253, 10, 25, 12.5, 100, 'tramezzino tonno', null, null, 'tramezzino/tramezzini=100'],
+  ['Tramezzino prosciutto e formaggio', 260, 11, 24, 13.5, 100, 'tramezzino prosciutto formaggio', null, null, 'tramezzino/tramezzini=100'],
+  ['Hamburger (panino completo)', 250, 13, 28, 9.5, 220, 'hamburger panino burger', null, null, 'panino/panini=220'],
+  ['Cheeseburger', 268, 14, 27, 11.5, 130, 'cheeseburger', null, null, 'panino/panini=130'],
+  ['Hot dog', 260, 10, 25, 13.5, 120, 'hot dog', null, null, 'hot dog/hot dog=120'],
+  ['Kebab', 214, 12, 20, 9.5, 300, 'kebab piadina pita', null, null, 'kebab/kebab=300'],
+  ['Gyros / shawarma in pita', 210, 12, 20, 9, 300, 'gyros pita shawarma', null, null, 'pita/pite=300'],
+  ['Nuggets di pollo', 296, 15.5, 16.5, 18.5, 120, 'nuggets pollo crocchette', null, null, 'pezzo/pezzi=18'],
+  ['Burrito', 210, 9, 25, 8, 300, 'burrito', null, null, 'burrito/burrito=300'],
+  ['Tacos', 220, 10, 20, 11, 150, 'tacos', null, null, 'taco/tacos=75'],
+  ['Nachos con formaggio', 330, 8, 35, 18, 150, 'nachos'],
+
+  // ---------- Cucina asiatica ----------
+  ['Sushi nigiri al salmone', 150, 7, 25, 2.5, 150, 'sushi nigiri', null, null, 'pezzo/pezzi=30'],
+  ['Sushi uramaki', 165, 5, 28, 3.5, 200, 'sushi maki uramaki california roll', null, null, 'pezzo/pezzi=30'],
+  ['Sushi hosomaki', 140, 4, 28, 1, 150, 'hosomaki maki', null, null, 'pezzo/pezzi=15'],
+  ['Sashimi di salmone', 180, 20, 0, 11, 100, 'sashimi salmone', null, null, 'fetta/fette=15'],
+  ['Temaki', 170, 6, 25, 5, 120, 'temaki', null, null, 'temaki/temaki=120'],
+  ['Onigiri', 170, 4, 36, 0.5, 110, 'onigiri', null, null, 'onigiri/onigiri=110'],
+  ['Poke bowl al salmone', 150, 8, 18, 5, 400, 'poke bowl salmone', null, null, 'bowl/bowl=400'],
+  ['Ramen', 85, 4.5, 10, 3, 500, 'ramen zuppa giapponese', null, null, 'ciotola/ciotole=500'],
+  ['Pad thai', 170, 7, 22, 6, 350, 'pad thai'],
+  ['Noodles saltati con verdure', 150, 4.5, 22, 5, 300, 'noodles saltati spaghetti soia'],
+  ['Involtini primavera', 230, 5, 25, 12, 100, 'involtini primavera', null, null, 'involtino/involtini=50'],
+  ['Ravioli al vapore (gyoza)', 190, 8, 25, 6, 150, 'ravioli vapore cinesi gyoza dim sum', null, null, 'raviolo/ravioli=25'],
+
+  // ---------- Fast food (valori indicativi delle catene) ----------
+  ["Big Mac (McDonald's)", 240, 12, 20, 12.5, 220, 'big mac mcdonald mcdonalds', null, null, 'panino/panini=220'],
+  ["McChicken (McDonald's)", 250, 11, 26, 11, 160, 'mcchicken mcdonald mcdonalds pollo', null, null, 'panino/panini=160'],
+  ["Cheeseburger (McDonald's)", 255, 13, 26, 11, 118, 'cheeseburger mcdonald mcdonalds', null, null, 'panino/panini=118'],
+  ["Hamburger (McDonald's)", 240, 12.5, 29, 8.5, 104, 'hamburger mcdonald mcdonalds', null, null, 'panino/panini=104'],
+  ["Chicken McNuggets (McDonald's)", 249, 15, 16, 14, 104, 'mcnuggets nuggets mcdonald mcdonalds', null, null, 'porzione da 6/porzioni da 6=104;pezzo/pezzi=17'],
+  ["Patatine fritte (McDonald's)", 296, 3.4, 38.5, 14.4, 114, 'patatine fritte mcdonald mcdonalds', null, null, 'porzione media/porzioni medie=114;porzione piccola/porzioni piccole=80;porzione grande/porzioni grandi=150'],
+  ['Whopper (Burger King)', 235, 10.5, 18, 13.5, 280, 'whopper burger king', null, null, 'panino/panini=280'],
 
   // ---------- Bevande ----------
-  ['Caffè espresso', 9, 0.1, 1.7, 0.2, 30, 'caffe espresso', 'ml'],
-  ['Caffè americano', 2, 0.1, 0.3, 0, 200, 'caffe americano lungo', 'ml'],
-  ['Cappuccino (senza zucchero)', 40, 2.2, 3.3, 2, 150, 'cappuccino', 'ml'],
-  ['Latte macchiato (senza zucchero)', 50, 2.8, 4.2, 2.6, 200, 'latte macchiato caffelatte', 'ml'],
-  ['Cioccolata calda', 112, 3.5, 16, 3.8, 150, 'cioccolata calda', 'ml'],
-  ["Succo d'arancia", 45, 0.7, 10.4, 0.2, 200, 'spremuta succo arancia', 'ml'],
-  ['Succo di frutta (nettare)', 55, 0.3, 13, 0, 200, 'succo frutta pesca pera albicocca', 'ml'],
-  ['Bibita tipo cola', 42, 0, 10.6, 0, 330, 'coca cola pepsi bibita', 'ml'],
-  ['Bibita zero zuccheri', 0.3, 0, 0, 0, 330, 'coca cola zero light diet bibita', 'ml'],
-  ['Aranciata', 40, 0, 10, 0, 330, 'aranciata fanta bibita', 'ml'],
-  ['Acqua tonica', 34, 0, 8.8, 0, 200, 'acqua tonica schweppes', 'ml'],
-  ['Tè freddo', 30, 0, 7.5, 0, 330, 'te the freddo pesca limone estathe', 'ml'],
-  ['Bevanda energetica', 45, 0, 11, 0, 250, 'energy drink red bull monster', 'ml'],
-  ['Birra chiara', 43, 0.5, 3.6, 0, 330, 'birra', 'ml'],
-  ['Birra analcolica', 26, 0.3, 5.5, 0, 330, 'birra analcolica', 'ml'],
-  ['Vino rosso', 85, 0.1, 2.6, 0, 125, 'vino rosso', 'ml'],
-  ['Vino bianco', 82, 0.1, 2.6, 0, 125, 'vino bianco', 'ml'],
-  ['Prosecco', 75, 0.1, 1.5, 0, 125, 'prosecco spumante bollicine', 'ml'],
-  ['Spritz', 70, 0, 7, 0, 200, 'spritz aperol campari aperitivo', 'ml'],
-  ['Superalcolico (40%)', 220, 0, 0, 0, 40, 'gin vodka rum whisky grappa amaro', 'ml']
+  ['Caffè espresso', 9, 0.1, 1.7, 0.2, 30, 'caffe espresso', 'ml', null, 'tazzina/tazzine=30'],
+  ['Caffè macchiato', 20, 1, 2, 1, 40, 'caffe macchiato', 'ml', null, 'tazzina/tazzine=40'],
+  ['Caffè americano', 2, 0.1, 0.3, 0, 200, 'caffe americano lungo', 'ml', null, 'tazza/tazze=200'],
+  ["Caffè d'orzo", 10, 0.3, 2, 0, 150, 'orzo caffe', 'ml', null, 'tazza/tazze=150'],
+  ['Caffè al ginseng', 70, 0.5, 11, 3, 50, 'ginseng caffe', 'ml', null, 'tazzina/tazzine=50'],
+  ['Cappuccino (senza zucchero)', 40, 2.2, 3.3, 2, 150, 'cappuccino', 'ml', null, 'tazza/tazze=150'],
+  ['Latte macchiato (senza zucchero)', 50, 2.8, 4.2, 2.6, 200, 'latte macchiato caffelatte', 'ml', null, 'bicchiere/bicchieri=200'],
+  ['Cioccolata calda', 112, 3.5, 16, 3.8, 150, 'cioccolata calda', 'ml', null, 'tazza/tazze=150'],
+  ['Tè o tisana (senza zucchero)', 1, 0, 0.2, 0, 250, 'te the tisana infuso camomilla', 'ml', null, 'tazza/tazze=250'],
+  ["Succo d'arancia", 45, 0.7, 10.4, 0.2, 200, 'spremuta succo arancia', 'ml', null, 'bicchiere/bicchieri=200'],
+  ['Succo di frutta (nettare)', 55, 0.3, 13, 0, 200, 'succo frutta pesca pera albicocca', 'ml', null, 'bicchiere/bicchieri=200;brick/brick=200'],
+  ['Succo ACE', 45, 0.2, 11, 0, 200, 'succo ace', 'ml', null, 'bicchiere/bicchieri=200'],
+  ['Succo di mela', 46, 0.1, 11, 0.1, 200, 'succo mela', 'ml', null, 'bicchiere/bicchieri=200'],
+  ['Succo di pomodoro', 17, 0.8, 3, 0.1, 200, 'succo pomodoro', 'ml', null, 'bicchiere/bicchieri=200'],
+  ['Frullato di frutta', 55, 0.6, 12, 0.3, 250, 'frullato smoothie', 'ml', null, 'bicchiere/bicchieri=250'],
+  ['Centrifugato di frutta e verdura', 40, 0.6, 9, 0.2, 250, 'centrifuga estratto', 'ml', null, 'bicchiere/bicchieri=250'],
+  ['Milkshake', 110, 3.5, 17, 3, 300, 'milkshake frappe', 'ml', null, 'bicchiere/bicchieri=300'],
+  ['Bibita tipo cola', 42, 0, 10.6, 0, 330, 'coca cola pepsi bibita', 'ml', null, 'lattina/lattine=330'],
+  ['Bibita zero zuccheri', 0.3, 0, 0, 0, 330, 'coca cola zero light diet bibita', 'ml', null, 'lattina/lattine=330'],
+  ['Aranciata', 40, 0, 10, 0, 330, 'aranciata fanta bibita', 'ml', null, 'lattina/lattine=330'],
+  ['Limonata', 40, 0, 10, 0, 330, 'limonata lemon soda', 'ml', null, 'lattina/lattine=330'],
+  ['Gassosa / chinotto', 40, 0, 10, 0, 330, 'gassosa chinotto cedrata', 'ml', null, 'bottiglietta/bottigliette=275'],
+  ['Acqua tonica', 34, 0, 8.8, 0, 200, 'acqua tonica', 'ml', null, 'bottiglietta/bottigliette=200'],
+  ['Tè freddo', 30, 0, 7.5, 0, 330, 'te the freddo pesca limone', 'ml', null, 'bottiglia piccola/bottiglie piccole=330'],
+  ['Tè freddo zero', 1, 0, 0.2, 0, 330, 'te the freddo zero', 'ml', null, 'bottiglia piccola/bottiglie piccole=330'],
+  ['Bevanda energetica', 45, 0, 11, 0, 250, 'energy drink red bull monster', 'ml', null, 'lattina/lattine=250'],
+  ['Bevanda isotonica', 25, 0, 6, 0, 500, 'isotonica sport gatorade powerade', 'ml', null, 'bottiglia/bottiglie=500'],
+  ['Kombucha', 15, 0, 3.5, 0, 330, 'kombucha', 'ml'],
+  ['Birra chiara', 43, 0.5, 3.6, 0, 330, 'birra', 'ml', null, 'bottiglia piccola/bottiglie piccole=330;pinta/pinte=500'],
+  ['Birra rossa / doppio malto', 60, 0.5, 4.5, 0, 330, 'birra rossa doppio malto ambrata', 'ml', null, 'bottiglia piccola/bottiglie piccole=330'],
+  ['Birra weiss', 50, 0.5, 4, 0, 500, 'birra weiss bianca frumento', 'ml', null, 'bottiglia/bottiglie=500'],
+  ['Birra analcolica', 26, 0.3, 5.5, 0, 330, 'birra analcolica', 'ml', null, 'bottiglia piccola/bottiglie piccole=330'],
+  ['Sidro', 45, 0, 4, 0, 330, 'sidro', 'ml'],
+  ['Vino rosso', 85, 0.1, 2.6, 0, 125, 'vino rosso', 'ml', null, 'bicchiere/bicchieri=125'],
+  ['Vino bianco', 82, 0.1, 2.6, 0, 125, 'vino bianco', 'ml', null, 'bicchiere/bicchieri=125'],
+  ['Vino rosato', 75, 0.1, 2.5, 0, 125, 'vino rosato', 'ml', null, 'bicchiere/bicchieri=125'],
+  ['Vino dolce (moscato, passito)', 140, 0.2, 14, 0, 75, 'moscato passito vino dolce', 'ml', null, 'bicchierino/bicchierini=75'],
+  ['Prosecco', 75, 0.1, 1.5, 0, 125, 'prosecco spumante bollicine champagne', 'ml', null, 'flûte/flûte=125'],
+  ['Spritz', 70, 0, 7, 0, 200, 'spritz aperol campari aperitivo', 'ml', null, 'bicchiere/bicchieri=200'],
+  ['Negroni', 220, 0, 10, 0, 90, 'negroni', 'ml', null, 'bicchiere/bicchieri=90'],
+  ['Gin tonic', 71, 0, 5, 0, 250, 'gin tonic', 'ml', null, 'bicchiere/bicchieri=250'],
+  ['Mojito', 90, 0, 9, 0, 250, 'mojito', 'ml', null, 'bicchiere/bicchieri=250'],
+  ['Rum e cola', 85, 0, 8, 0, 250, 'rum cola cuba libre', 'ml', null, 'bicchiere/bicchieri=250'],
+  ['Americano (aperitivo)', 140, 0, 10, 0, 120, 'americano aperitivo cocktail', 'ml', null, 'bicchiere/bicchieri=120'],
+  ['Vermouth', 150, 0, 15, 0, 75, 'vermouth martini', 'ml', null, 'bicchierino/bicchierini=75'],
+  ['Amaro', 250, 0, 25, 0, 30, 'amaro digestivo', 'ml', null, 'bicchierino/bicchierini=30'],
+  ['Limoncello', 300, 0, 30, 0, 30, 'limoncello', 'ml', null, 'bicchierino/bicchierini=30'],
+  ['Sambuca', 340, 0, 37, 0, 30, 'sambuca anice', 'ml', null, 'bicchierino/bicchierini=30'],
+  ['Crema di whisky', 330, 3, 20, 15.5, 40, 'crema whisky baileys', 'ml', null, 'bicchierino/bicchierini=40'],
+  ['Superalcolico (40%)', 220, 0, 0, 0, 40, 'gin vodka rum whisky grappa', 'ml', null, 'bicchierino/bicchierini=40']
 ];
 
 </script>
@@ -1279,14 +1746,17 @@ window.MV_FOODS = [
     // La stessa stringa che imposti come APP_KEY nel Worker.
     AI_APP_KEY: '',
     OFF_SEARCH: 'https://world.openfoodfacts.org/cgi/search.pl',
+    OFF_SEARCH_IT: 'https://it.openfoodfacts.org/cgi/search.pl',
     OFF_PRODUCT: 'https://world.openfoodfacts.org/api/v2/product/',
-    VERSION: '2.1.0'
+    VERSION: '2.2.0'
   };
   var PREVIEW = !!window.MV_PREVIEW;
+  // App Android del Play Store: la pagina gira in una WebView che offre MVAndroid (scanner Google, salvataggio file, link esterni).
+  var NATIVE = window.MVAndroid || null;
   // Installazione sul telefono: Android (Chrome) offre il prompt, iPhone usa «Aggiungi alla schermata Home».
   var installEvt = null;
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); installEvt = e; if (window.MV_RENDER_INSTALL) window.MV_RENDER_INSTALL(); });
-  var OFF_FIELDS = 'code,product_name,product_name_it,generic_name,brands,nutriments,serving_quantity,quantity';
+  var OFF_FIELDS = 'code,product_name,product_name_it,generic_name,brands,nutriments,serving_quantity,serving_size,quantity,image_front_thumb_url';
 
   /* ================= Utilità ================= */
   var $ = function (s, el) { return (el || document).querySelector(s); };
@@ -1396,7 +1866,29 @@ window.MV_FOODS = [
     list.forEach(function (e) { var n = nut(e.base, e.qty); t.kcal += n.kcal; t.p += n.p; t.c += n.c; t.f += n.f; });
     return t;
   }
-  function qtyLabel(q, u) { return u === 'porz.' ? (q === 1 ? '1 porzione' : f1(q) + ' porzioni') : f0(q) + ' ' + u; }
+  function qtyLabel(q, u, units) {
+    if (u === 'porz.') return q === 1 ? '1 porzione' : f1(q) + ' porzioni';
+    var un = unitFor(q, units);
+    return (un ? un + ' · ' : '') + f0(q) + ' ' + u;
+  }
+  // Porzioni in unità naturali (1 fetta, 2 vasetti...): formato 'fetta/fette=40;rosetta/rosette=60'
+  function parseUnits(str) {
+    if (!str) return null;
+    var out = String(str).split(';').map(function (x) {
+      var m = x.split('='), n = m[0].split('/');
+      return { s: n[0].trim(), p: (n[1] || n[0]).trim(), g: +m[1] };
+    }).filter(function (u) { return u.s && u.g > 0; });
+    return out.length ? out : null;
+  }
+  function unitText(n, un) { return (n === 0.5 ? '½' : f1(n)) + ' ' + (n > 1 ? un.p : un.s); }
+  function unitFor(q, units) {
+    if (!units || !units.length || !(q > 0)) return '';
+    for (var i = 0; i < units.length; i++) {
+      var n = q / units[i].g, h = Math.round(n * 2) / 2;
+      if (h >= 0.5 && h <= 20 && Math.abs(n - h) < 0.03) return unitText(h, units[i]);
+    }
+    return '';
+  }
 
   var MEALS = [{ id: 'colazione', label: 'Colazione' }, { id: 'pranzo', label: 'Pranzo' }, { id: 'cena', label: 'Cena' }, { id: 'spuntini', label: 'Spuntini' }];
   function mealLabel(id) { for (var i = 0; i < MEALS.length; i++) if (MEALS[i].id === id) return MEALS[i].label; return id; }
@@ -1466,24 +1958,30 @@ window.MV_FOODS = [
     var b = raw.rawBase, y = m[2], oil = m[3], loss = m[4], flour = m[5], cooked = m[0] !== 'crudo';
     var fatKept = b.f / y * (1 - loss);
     var base = cooked ? { q: 100, u: 'g', kcal: r1(b.kcal / y - (b.f / y - fatKept) * 9 + oil * 9 + flour * 4), p: r1(b.p / y), c: r1(b.c / y + flour), f: r1(fatKept + oil) } : b;
-    return { key: raw.rawKey + (cooked ? '|' + m[0] : ''), rawKey: raw.rawKey, rawName: raw.rawName, rawBase: b, rawDef: raw.rawDef, rawKw: raw.rawKw,
-             name: raw.rawName + ', ' + cookLabel(m, raw.cat), brand: '', src: 'db', cat: raw.cat, cook: m[0], base: base,
+    var units = raw.rawUnits ? raw.rawUnits.map(function (u) { return { s: u.s, p: u.p, g: cooked ? Math.max(1, Math.round(u.g * y)) : u.g }; }) : null;
+    return { key: raw.rawKey + (cooked ? '|' + m[0] : ''), rawKey: raw.rawKey, rawName: raw.rawName, rawBase: b, rawDef: raw.rawDef, rawKw: raw.rawKw, rawUnits: raw.rawUnits || null, units: units,
+             name: raw.rawName + ', ' + cookLabel(m, raw.cat), brand: '', src: 'db', cat: raw.cat, cook: m[0], base: base, top: !!raw.top,
              def: cooked ? Math.max(5, Math.round(raw.rawDef * y / 5) * 5) : raw.rawDef, kw: raw.rawKw + ' ' + norm(cookLabel(m, raw.cat) + ' ' + m[6]) };
   }
-  var DB = [], DBX = [];   // DB: alimenti base (per gli ingredienti, la versione cruda); DBX: varianti cotte
-  (window.MV_FOODS || []).forEach(function (r) {
-    var f = { key: 'db:' + r[0], name: r[0], brand: '', src: 'db', base: { q: 100, u: r[7] || 'g', kcal: r[1], p: r[2], c: r[3], f: r[4] }, def: r[5], kw: norm(r[0] + ' ' + (r[6] || '')) };
+  var DB = [], DBX = [], DBIX = {};   // DB: alimenti base (per gli ingredienti, la versione cruda); DBX: varianti cotte; DBIX: ordine nel database
+  (window.MV_FOODS || []).forEach(function (r, ix) {
+    // '*' tra le parole chiave = alimento più cercato (petto di pollo, pizza margherita...): viene prima nei risultati
+    var top = / ?\*/.test(r[6] || '');
+    var f = { key: 'db:' + r[0], name: r[0], brand: '', src: 'db', base: { q: 100, u: r[7] || 'g', kcal: r[1], p: r[2], c: r[3], f: r[4] }, def: r[5], kw: norm(r[0] + ' ' + (r[6] || '').replace('*', '')), units: parseUnits(r[9]), top: top };
     if (r[8] && cookList(r[8])) {
-      f.cat = r[8]; f.rawKey = f.key; f.rawName = r[0]; f.rawBase = f.base; f.rawDef = r[5]; f.rawKw = f.kw;
+      f.cat = r[8]; f.rawKey = f.key; f.rawName = r[0]; f.rawBase = f.base; f.rawDef = r[5]; f.rawKw = f.kw; f.rawUnits = f.units;
       DB.push(cookFood(f, 'crudo'));
-      cookList(r[8]).slice(1).forEach(function (m) { DBX.push(cookFood(f, m[0])); });
-    } else DB.push(f);
+      DBIX[f.key] = ix;
+      cookList(r[8]).slice(1).forEach(function (m, j) { var v = cookFood(f, m[0]); DBIX[v.key] = ix + (j + 1) / 10; DBX.push(v); });
+    } else { DB.push(f); DBIX[f.key] = ix; }
   });
   var SRC_LABEL = { db: 'Database MacroVision', off: 'Open Food Facts', ai: 'Stima AI', mine: 'Creato da te', manual: 'Inserito a mano' };
   // Campi di un alimento che si salvano (preferiti, recenti, voci del diario)
   function foodFields(food) {
     var o = { key: food.key, name: food.name, brand: food.brand || '', src: food.src, base: food.base, code: food.code || '' };
-    if (food.cat) { o.cat = food.cat; o.cook = food.cook; o.rawKey = food.rawKey; o.rawName = food.rawName; o.rawBase = food.rawBase; o.rawDef = food.rawDef; o.rawKw = food.rawKw; }
+    if (food.units) o.units = food.units;
+    if (food.img) o.img = food.img;
+    if (food.cat) { o.cat = food.cat; o.cook = food.cook; o.rawKey = food.rawKey; o.rawName = food.rawName; o.rawBase = food.rawBase; o.rawDef = food.rawDef; o.rawKw = food.rawKw; o.rawUnits = food.rawUnits || null; }
     return o;
   }
 
@@ -1533,10 +2031,12 @@ window.MV_FOODS = [
       else if (words.some(function (w) { return w.indexOf(s0) === 0; })) score += 1;
       if (words.some(function (w) { return w === t0 || stem(w) === s0; })) score += 0.5;
       if (wantsCook && f.cook && f.cook !== 'crudo') score += 1;
+      if (f.top) score += 3.5;
       if (m) score += 2 + Math.min(3, (m.n || 0) / 3) + (m.fav ? 2 : 0);
-      out.push({ f: withMine(f), s: score });
+      out.push({ f: withMine(f), s: score, ix: DBIX[f.key] != null ? DBIX[f.key] : 1e6 });
     });
-    out.sort(function (a, b) { return b.s - a.s || a.f.name.length - b.f.name.length || a.f.name.localeCompare(b.f.name, 'it'); });
+    // a parità di punteggio vale l'ordine del database, dove gli alimenti più comuni vengono prima
+    out.sort(function (a, b) { return b.s - a.s || a.ix - b.ix || a.f.name.length - b.f.name.length || a.f.name.localeCompare(b.f.name, 'it'); });
     return out.slice(0, 40).map(function (x) { return x.f; });
   }
 
@@ -1550,25 +2050,53 @@ window.MV_FOODS = [
     var brand = String(p.brands || '').split(',')[0].trim();
     var unit = /\d\s*(ml|cl|l)\b/i.test(p.quantity || '') ? 'ml' : 'g';
     var serving = num(p.serving_quantity);
+    var okServ = serving && serving > 0 && serving < 2000;
+    var img = String(p.image_front_thumb_url || '');
     return {
       key: 'off:' + p.code, name: name || 'Prodotto senza nome', brand: brand, src: 'off', code: String(p.code || ''),
       base: { q: 100, u: unit, kcal: r1(kcal || 0), p: r1(num(n.proteins_100g) || 0), c: r1(num(n.carbohydrates_100g) || 0), f: r1(num(n.fat_100g) || 0) },
-      def: serving && serving > 0 && serving < 2000 ? Math.round(serving) : 100,
+      def: okServ ? Math.round(serving) : 100,
+      units: okServ ? servingUnits(p.serving_size, Math.round(serving)) : null,
+      img: /^https:\/\/[a-z0-9.-]*openfoodfacts\.org\//.test(img) ? img : '',
       incomplete: kcal == null
     };
   }
-  function offSearch(q, signal) {
-    var u = CONFIG.OFF_SEARCH + '?search_simple=1&action=process&json=1&page_size=40&sort_by=unique_scans_n&fields=' + OFF_FIELDS + '&search_terms=' + encodeURIComponent(q);
-    return fetch(u, { signal: signal }).then(function (r) {
-      if (r.status === 429) { var e = new Error('troppe ricerche'); e.rate = true; throw e; }
-      if (!r.ok) throw new Error('http ' + r.status);
-      return r.json();
-    }).then(function (j) {
-      return (j.products || []).map(parseOff).filter(function (f) { return f && !f.incomplete && f.name !== 'Prodotto senza nome'; });
+  // «1 vasetto (125 g)» diventa la porzione «vasetto»; altrimenti «porzione»
+  function servingUnits(txt, g) {
+    var m = String(txt || '').trim().match(/^(\d+(?:[.,]\d+)?)?\s*([a-zàèéìòù' ]{3,24}?)\s*\(/i);
+    var n = m && m[1] ? num(m[1]) : 1, lab = m ? m[2].trim().toLowerCase() : '';
+    if (!lab || n !== 1 || /^(g|gr|grammi|ml|cl|porzione|porzioni|serving|portion|dose)$/.test(lab)) return [{ s: 'porzione', p: 'porzioni', g: g }];
+    return [{ s: lab, p: lab, g: g }];
+  }
+  function fetchT(url, signal, ms) {
+    // richiesta con tempo massimo: Open Food Facts a volte è lento
+    var ctl = new AbortController(), t = setTimeout(function () { ctl.abort(); }, ms || 12000);
+    if (signal) { if (signal.aborted) ctl.abort(); else signal.addEventListener('abort', function () { ctl.abort(); }); }
+    return fetch(url, { signal: ctl.signal }).then(function (r) { clearTimeout(t); return r; }, function (e) { clearTimeout(t); throw e; });
+  }
+  // Prima i prodotti venduti in Italia; se sono pochi, anche quelli del resto del mondo.
+  function offSearch(q, signal, page) {
+    function one(base) {
+      var u = base + '?search_simple=1&action=process&json=1&page_size=40&sort_by=unique_scans_n&lc=it&page=' + (page || 1) + '&fields=' + OFF_FIELDS + '&search_terms=' + encodeURIComponent(q);
+      return fetchT(u, signal, 15000).then(function (r) {
+        if (r.status === 429) { var e = new Error('troppe ricerche'); e.rate = true; throw e; }
+        if (!r.ok) throw new Error('http ' + r.status);
+        return r.json();
+      }).then(function (j) {
+        return (j.products || []).map(parseOff).filter(function (f) { return f && !f.incomplete && f.name !== 'Prodotto senza nome'; });
+      });
+    }
+    return one(CONFIG.OFF_SEARCH_IT).catch(function (e) { if (e && (e.rate || e.name === 'AbortError' && signal && signal.aborted)) throw e; return []; }).then(function (it) {
+      if (it.length >= 12) return it;
+      return one(CONFIG.OFF_SEARCH).then(function (w) {
+        var seen = {}, out = [];
+        it.concat(w).forEach(function (f) { if (!seen[f.key]) { seen[f.key] = 1; out.push(f); } });
+        return out;
+      }, function (e) { if (it.length) return it; throw e; });
     });
   }
   function offProduct(code) {
-    return fetch(CONFIG.OFF_PRODUCT + encodeURIComponent(code) + '?fields=' + OFF_FIELDS).then(function (r) {
+    return fetchT(CONFIG.OFF_PRODUCT + encodeURIComponent(code) + '?fields=' + OFF_FIELDS, null, 12000).then(function (r) {
       if (r.status === 404) return null;
       if (!r.ok) throw new Error('http ' + r.status);
       return r.json().then(function (j) {
@@ -1785,13 +2313,20 @@ window.MV_FOODS = [
   };
   var GEMINI_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-2.5-flash'];
   var GEMINI_THINK = [{ thinkingLevel: 'low' }, { thinkingBudget: 0 }, null];
-  function geminiDirect(req, signal, key) {
+  function parseJSONLoose(txt) {
+    var t = String(txt || '').trim();
+    try { return JSON.parse(t); } catch (e) { /* forse tra ``` */ }
+    t = t.replace(/```(?:json)?/gi, '');
+    var a = t.indexOf('{'), b = t.lastIndexOf('}');
+    if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e) { /* illeggibile */ } }
+    return null;
+  }
+  // Chiamata diretta a Gemini con la chiave personale.
+  // o = { parts, system, schema, search (ricerca Google), jsonHint (se lo schema non si può usare insieme alla ricerca) }
+  function gemini(o, signal, key) {
     key = key || S.aiKey;
-    var parts = [];
-    if (req.image) parts.push({ inlineData: { mimeType: req.image.mime, data: req.image.base64 } });
-    parts.push({ text: req.image ? 'Analizza la foto (un piatto o un\'etichetta).' + (req.text ? ' Dettagli: ' + req.text : '') : 'Pasto: ' + req.text });
     var models = S.aiModel ? [S.aiModel].concat(GEMINI_MODELS.filter(function (m) { return m !== S.aiModel; })) : GEMINI_MODELS.slice();
-    var last = '';
+    var last = '', useSchema = !!o.schema;
     // t = modo di ragionamento: livello basso (Gemini 3), budget zero (Gemini 2.5), nessuna impostazione
     function call(i, t) {
       if (i >= models.length) return Promise.reject(new Error(
@@ -1799,21 +2334,35 @@ window.MV_FOODS = [
         : last === 'busy' ? 'Gemini è sovraccarico in questo momento. Riprova tra poco.'
         : 'Nessun modello Gemini risponde con questa chiave. Riprova più tardi.'));
       if (t == null) t = models[i] === S.aiModel && S.aiThink != null ? S.aiThink : 0;
-      var gc = { responseMimeType: 'application/json', responseSchema: AI_SCHEMA, temperature: 0.2, maxOutputTokens: 4096 };
+      var gc = { temperature: 0.2, maxOutputTokens: 4096 };
+      if (useSchema) { gc.responseMimeType = 'application/json'; gc.responseSchema = o.schema; }
       if (GEMINI_THINK[t]) gc.thinkingConfig = GEMINI_THINK[t];
+      var parts = o.parts.slice();
+      if (!useSchema && o.jsonHint) parts.push({ text: o.jsonHint });
+      var body = { systemInstruction: { parts: [{ text: o.system }] }, contents: [{ role: 'user', parts: parts }], generationConfig: gc };
+      if (o.search) body.tools = [{ googleSearch: {} }];
       return fetch('https://generativelanguage.googleapis.com/v1beta/models/' + models[i] + ':generateContent?key=' + encodeURIComponent(key), {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: signal,
-        body: JSON.stringify({ systemInstruction: { parts: [{ text: AI_SYSTEM }] }, contents: [{ role: 'user', parts: parts }], generationConfig: gc })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: signal, body: JSON.stringify(body)
       }).then(function (r) {
         if (r.ok) return r.json().then(function (data) {
           S.aiModel = models[i]; S.aiThink = t; save();
-          var out = ((data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [])
+          var cand = (data.candidates && data.candidates[0]) || {};
+          var out = ((cand.content && cand.content.parts) || [])
             .filter(function (p) { return typeof p.text === 'string' && !p.thought; }).map(function (p) { return p.text; }).join('');
-          try { return JSON.parse(out); } catch (e) { throw new Error('La risposta dell\'AI non è leggibile. Riprova.'); }
+          var json = parseJSONLoose(out);
+          if (json == null) throw new Error('La risposta dell\'AI non è leggibile. Riprova.');
+          var gm = cand.groundingMetadata || {};
+          return {
+            json: json,
+            sources: (gm.groundingChunks || []).map(function (c) { return c && c.web; }).filter(function (w) { return w && /^https:\/\//.test(w.uri || ''); }).slice(0, 4),
+            suggest: (gm.searchEntryPoint && gm.searchEntryPoint.renderedContent) || ''
+          };
         });
         return r.text().then(function (txt) {
           if (/API_KEY_INVALID|API key not valid|API key expired/i.test(txt)) throw new Error('La chiave Gemini non è valida. Controlla di averla copiata tutta.');
           if (r.status === 400 && t < GEMINI_THINK.length - 1 && /thinking|budget/i.test(txt)) return call(i, t + 1);
+          // alcuni modelli non accettano lo schema JSON insieme alla ricerca Google: si chiede il JSON a parole
+          if (r.status === 400 && useSchema && o.search && /mime|schema|json|controlled|tool/i.test(txt)) { useSchema = false; return call(i, t); }
           if (r.status === 404 || (r.status === 400 && /not found|is not supported|unsupported/i.test(txt))) return call(i + 1);
           // limite raggiunto o modello non incluso nel piano gratuito: si prova il modello successivo
           if (r.status === 429) { last = 'quota'; return call(i + 1); }
@@ -1825,21 +2374,80 @@ window.MV_FOODS = [
     }
     return call(0);
   }
+  function geminiDirect(req, signal, key) {
+    var parts = [];
+    if (req.image) parts.push({ inlineData: { mimeType: req.image.mime, data: req.image.base64 } });
+    parts.push({ text: req.image ? 'Analizza la foto (un piatto o un\'etichetta).' + (req.text ? ' Dettagli: ' + req.text : '') : 'Pasto: ' + req.text });
+    return gemini({ parts: parts, system: AI_SYSTEM, schema: AI_SCHEMA }, signal, key).then(function (r) { return r.json; });
+  }
+  function aiServer(body, signal) {
+    var headers = { 'Content-Type': 'application/json' };
+    if (CONFIG.AI_APP_KEY) headers['X-App-Key'] = CONFIG.AI_APP_KEY;
+    return fetch(CONFIG.AI_ENDPOINT, { method: 'POST', headers: headers, signal: signal, body: JSON.stringify(body) }).then(function (r) {
+      if (r.status === 429) throw new Error('Hai raggiunto il limite di analisi AI per oggi. Riprova domani o aggiungi gli alimenti dalla ricerca.');
+      if (!r.ok) throw new Error('Il servizio AI non ha risposto (errore ' + r.status + '). Riprova tra poco.');
+      return r.json();
+    });
+  }
+
+  /* Prodotti confezionati: etichetta letta dall'AI o codice cercato su internet */
+  var PRODUCT_SCHEMA = {
+    type: 'OBJECT',
+    properties: {
+      trovato: { type: 'BOOLEAN' }, nome: { type: 'STRING' }, marca: { type: 'STRING' }, unita: { type: 'STRING', enum: ['g', 'ml'] },
+      kcal: { type: 'NUMBER' }, proteine: { type: 'NUMBER' }, carboidrati: { type: 'NUMBER' }, grassi: { type: 'NUMBER' },
+      porzione: { type: 'NUMBER' }, nota: { type: 'STRING' }
+    },
+    required: ['trovato']
+  };
+  var LABEL_SYSTEM = 'Leggi l\'etichetta di un prodotto alimentare confezionato. Riporta il nome del prodotto e la marca se si vedono. ' +
+    'Dalla tabella nutrizionale riporta i valori PER 100 g (o per 100 ml se è una bevanda): energia in kcal (se c\'è solo il valore in kJ, dividilo per 4,184), ' +
+    'proteine, carboidrati totali (non solo gli zuccheri) e grassi totali. Se la tabella riporta solo i valori per porzione, calcola quelli per 100 g dal peso della porzione. ' +
+    'Se c\'è una porzione consigliata, riporta il suo peso in grammi. Se nella foto non c\'è una tabella nutrizionale leggibile, metti trovato = false e spiega in nota, in italiano, come rifare la foto.';
+  var SEARCH_SYSTEM = 'Identifichi prodotti alimentari dal codice a barre (EAN o UPC). Usa la ricerca Google per trovare il prodotto con ESATTAMENTE questo codice ' +
+    '(siti di supermercati, del produttore, database di prodotti alimentari). Riporta nome, marca e i valori nutrizionali per 100 g o 100 ml come sull\'etichetta. ' +
+    'Se non trovi con certezza il prodotto con quel codice, metti trovato = false: non indovinare e non usare prodotti simili. Scrivi la nota in italiano.';
+  var PRODUCT_JSON_HINT = 'Rispondi solo con un oggetto JSON con queste chiavi: trovato (true o false), nome, marca, unita ("g" o "ml"), ' +
+    'kcal, proteine, carboidrati, grassi (valori per 100 g o 100 ml), porzione (grammi) e nota.';
+  function normProduct(o) {
+    o = o || {};
+    var v = { kcal: num(o.kcal), p: num(o.proteine), c: num(o.carboidrati), f: num(o.grassi) };
+    var ok = v.kcal != null && v.kcal >= 0 && v.kcal <= 950 && [v.p, v.c, v.f].every(function (x) { return x == null || (x >= 0 && x <= 100); }) &&
+      (v.p || 0) + (v.c || 0) + (v.f || 0) <= 105;
+    var vals = ok ? { kcal: r1(v.kcal), p: r1(v.p || 0), c: r1(v.c || 0), f: r1(v.f || 0) } : null;
+    var est = vals ? vals.p * 4 + vals.c * 4 + vals.f * 9 : 0;
+    var serving = num(o.porzione);
+    return {
+      found: o.trovato !== false && !!(vals || o.nome),
+      name: String(o.nome || '').trim().slice(0, 80), brand: String(o.marca || '').trim().slice(0, 60),
+      unit: /ml/i.test(o.unita || '') ? 'ml' : 'g', vals: o.trovato === false ? null : vals,
+      check: !!vals && Math.abs(vals.kcal - est) > Math.max(40, vals.kcal * 0.25),
+      serving: serving > 0 && serving < 2000 ? Math.round(serving) : null,
+      note: String(o.nota || '').trim().slice(0, 240), sources: [], suggest: ''
+    };
+  }
+  // mode 'label': d = { image, hint }; mode 'search': d = { code, name, brand }
+  function aiProduct(mode, d, signal) {
+    if (typeof window.MV_AI_PRODUCT === 'function') return window.MV_AI_PRODUCT(mode, d, signal).then(normProduct);
+    if (!CONFIG.AI_ENDPOINT && S.aiKey) {
+      var parts = mode === 'label'
+        ? [{ inlineData: { mimeType: d.image.mime, data: d.image.base64 } }, { text: 'Leggi l\'etichetta di questo prodotto.' + (d.hint ? ' Dovrebbe essere: ' + d.hint + '.' : '') }]
+        : [{ text: 'Codice a barre: ' + d.code + '.' + (d.name ? ' Nome indicato da un database: ' + d.name + (d.brand ? ', marca ' + d.brand : '') + '.' : '') }];
+      return gemini({ parts: parts, system: mode === 'label' ? LABEL_SYSTEM : SEARCH_SYSTEM, schema: PRODUCT_SCHEMA, search: mode === 'search', jsonHint: PRODUCT_JSON_HINT }, signal)
+        .then(function (r) { var res = normProduct(r.json); res.sources = r.sources; res.suggest = r.suggest; return res; });
+    }
+    if (CONFIG.AI_ENDPOINT) {
+      return aiServer(mode === 'label' ? { mode: 'label', text: d.hint || '', image: d.image.base64, mime: d.image.mime } : { mode: 'barcode', text: d.code, hint: [d.name, d.brand].filter(Boolean).join(', ') }, signal)
+        .then(function (j) { var res = normProduct(j); res.sources = (j && j.fonti) || []; res.suggest = (j && j.suggerimenti) || ''; return res; });
+    }
+    return Promise.reject(new Error('L\'analisi AI non è attiva.'));
+  }
   var AI = {
     available: function () { return typeof window.MV_AI_PROVIDER === 'function' || !!CONFIG.AI_ENDPOINT || !!S.aiKey; },
     analyze: function (req, signal) {
       if (typeof window.MV_AI_PROVIDER === 'function') return window.MV_AI_PROVIDER(req, signal).then(normalizeAI);
       if (!CONFIG.AI_ENDPOINT && S.aiKey) return geminiDirect(req, signal).then(normalizeAI);
-      var headers = { 'Content-Type': 'application/json' };
-      if (CONFIG.AI_APP_KEY) headers['X-App-Key'] = CONFIG.AI_APP_KEY;
-      return fetch(CONFIG.AI_ENDPOINT, {
-        method: 'POST', headers: headers, signal: signal,
-        body: JSON.stringify({ mode: req.image ? 'image' : 'text', text: req.text || '', image: req.image ? req.image.base64 : undefined, mime: req.image ? req.image.mime : undefined })
-      }).then(function (r) {
-        if (r.status === 429) throw new Error('Hai raggiunto il limite di analisi AI per oggi. Riprova domani o aggiungi gli alimenti dalla ricerca.');
-        if (!r.ok) throw new Error('Il servizio AI non ha risposto (errore ' + r.status + '). Riprova tra poco.');
-        return r.json();
-      }).then(normalizeAI);
+      return aiServer({ mode: req.image ? 'image' : 'text', text: req.text || '', image: req.image ? req.image.base64 : undefined, mime: req.image ? req.image.mime : undefined }, signal).then(normalizeAI);
     }
   };
   function normalizeAI(obj) {
@@ -2036,7 +2644,7 @@ window.MV_FOODS = [
         (list.length ? '<ul class="entries">' + list.map(function (e) {
           var n = nut(e.base, e.qty);
           return '<li class="entry" data-a="edit" data-id="' + e.id + '" tabindex="0"><div class="main"><div class="nm">' + esc(e.name) + '</div>' +
-            '<div class="mt num"><em>' + qtyLabel(e.qty, e.base.u) + '</em><span>P ' + fm(n.p) + '</span><span>C ' + fm(n.c) + '</span><span>G ' + fm(n.f) + '</span></div></div>' +
+            '<div class="mt num"><em>' + qtyLabel(e.qty, e.base.u, e.units) + '</em><span>P ' + fm(n.p) + '</span><span>C ' + fm(n.c) + '</span><span>G ' + fm(n.f) + '</span></div></div>' +
             '<div class="kc num">' + f0(n.kcal) + '</div></li>';
         }).join('') + '</ul>' : '<div class="empty-meal">Niente ancora</div>') + '</section>';
     }).join('');
@@ -2052,7 +2660,7 @@ window.MV_FOODS = [
   }
 
   /* ================= Installazione ================= */
-  function isStandalone() { return !!window.Capacitor || navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches); }
+  function isStandalone() { return !!NATIVE || !!window.Capacitor || navigator.standalone === true || !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches); }
   function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
   function isAndroid() { return /android/i.test(navigator.userAgent); }
   function canInstall() { return !PREVIEW && !isStandalone() && /^https?:$/.test(location.protocol); }
@@ -2110,7 +2718,7 @@ window.MV_FOODS = [
   function foodRow(f, i) {
     var star = S.foods[f.key] && S.foods[f.key].fav;
     var sub = [f.brand, f.src === 'off' && !f.brand ? 'Prodotto confezionato' : '', f.base.u === 'porz.' ? 'per porzione' : 'per 100 ' + f.base.u].filter(Boolean).join(', ');
-    return '<li class="item" data-i="' + i + '" tabindex="0"><div class="main"><div class="nm">' + esc(f.name) + '</div><div class="sub">' + esc(sub) + '</div></div>' +
+    return '<li class="item" data-i="' + i + '" tabindex="0">' + (f.img ? '<img class="thumb" src="' + esc(f.img) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : '') + '<div class="main"><div class="nm">' + esc(f.name) + '</div><div class="sub">' + esc(sub) + '</div></div>' +
       '<div class="kc num">' + f0(f.base.kcal) + ' kcal</div><button class="iconbtn star' + (star ? ' on' : '') + '" data-star="' + i + '" aria-label="' + (star ? 'Togli dai preferiti' : 'Aggiungi ai preferiti') + '">' + icon('star', 'sm') + '</button></li>';
   }
   function bindFoodList(el, list, onPick) {
@@ -2136,10 +2744,12 @@ window.MV_FOODS = [
   function addScreen() {
     var st = { q: '', online: null, onlineQ: '', loading: false, err: '', ctl: null, cache: {}, timer: 0 };
     var scr = {
+      isAdd: true,
       title: 'Aggiungi alimento',
       onClose: function () { if (st.ctl) st.ctl.abort(); clearTimeout(st.timer); },
       render: function (el) {
         var ai = AI.available();
+        if (UI.pendingQ != null) { st.q = UI.pendingQ; UI.pendingQ = null; st.online = null; st.onlineQ = ''; st.err = ''; st.focus = true; }
         el.innerHTML =
           '<div class="stack">' +
           '<div class="chips" role="group" aria-label="Pasto">' + MEALS.map(function (m) { return '<button class="chip' + (m.id === UI.addMeal ? ' on' : '') + '" data-meal="' + m.id + '">' + m.label + '</button>'; }).join('') + '</div>' +
@@ -2153,6 +2763,7 @@ window.MV_FOODS = [
           '</div><div id="add-res"></div></div>';
         var q = $('#add-q', el);
         q.value = st.q;
+        if (st.focus) { st.focus = false; setTimeout(function () { try { q.focus(); q.select(); } catch (e) { /* ok */ } }, 60); }
         q.addEventListener('input', function () {
           st.q = q.value;
           renderRes();
@@ -2179,12 +2790,12 @@ window.MV_FOODS = [
         function online() {
           var qq = st.q.trim();
           if (!qq || (st.loading && st.onlineQ === qq)) return;
-          if (st.cache[qq]) { st.online = st.cache[qq]; st.onlineQ = qq; st.err = ''; st.loading = false; renderRes(); return; }
+          if (st.cache[qq]) { st.online = st.cache[qq]; st.onlineQ = qq; st.err = ''; st.loading = false; st.more = st.online.length >= 30 && !st.loadingMore; renderRes(); return; }
           if (st.ctl) st.ctl.abort();
           st.ctl = new AbortController();
           st.loading = true; st.err = ''; st.onlineQ = qq; st.online = null;
           renderRes();
-          offSearch(qq, st.ctl.signal).then(function (list) { st.cache[qq] = list; if (st.onlineQ === qq) st.online = list; })
+          offSearch(qq, st.ctl.signal).then(function (list) { st.cache[qq] = list; if (st.onlineQ === qq) { st.online = list; st.page = 1; st.more = list.length >= 30; } })
             .catch(function (e) {
               if (e && e.name === 'AbortError') return;
               st.err = PREVIEW ? 'Nell\'anteprima la ricerca online è bloccata dal browser di Claude: funziona nell\'app installata.'
@@ -2213,7 +2824,9 @@ window.MV_FOODS = [
             else if (st.loading && st.onlineQ === qq) html += '<div class="busy" style="padding:18px">' + spinner() + '<span>Cerco «' + esc(qq) + '» tra milioni di prodotti…</span></div>';
             else if (st.err && st.onlineQ === qq) html += '<div class="notice">' + esc(st.err) + '</div><button class="btn ghost block" data-a="online" style="margin-top:10px">Riprova</button>';
             else if (st.online && st.onlineQ === qq) {
-              if (st.online.length) html += '<ul class="list">' + st.online.map(function (f) { list.push(withMine(f)); return foodRow(withMine(f), list.length - 1); }).join('') + '</ul><p class="note">Dati da Open Food Facts, licenza ODbL.</p>';
+              if (st.online.length) html += '<ul class="list">' + st.online.map(function (f) { list.push(withMine(f)); return foodRow(withMine(f), list.length - 1); }).join('') + '</ul>' +
+                (st.more ? '<button class="btn ghost block" data-a="more"' + (st.loadingMore ? ' disabled' : '') + '>' + (st.loadingMore ? 'Carico…' : 'Mostra altri prodotti') + '</button>' : '') +
+                '<p class="note">Dati da Open Food Facts, licenza ODbL.</p>';
               else html += '<p class="note">Nessun prodotto di marca trovato per «' + esc(qq) + '». Prova con marca e nome, oppure scansiona il codice a barre.</p>';
             } else html += '<div class="busy" style="padding:18px">' + spinner() + '<span>Cerco tra i prodotti di marca…</span></div>';
             html += '<button class="btn ghost block" data-a="ask-ai" style="margin-top:12px">' + icon('sparkle', 'sm') + ' Non lo trovi? Chiedi all\'AI «' + esc(qq.length > 28 ? qq.slice(0, 28) + '…' : qq) + '»</button>';
@@ -2221,6 +2834,18 @@ window.MV_FOODS = [
           box.innerHTML = html;
           var on = $('[data-a=online]', box);
           if (on) on.onclick = online;
+          var mb = $('[data-a=more]', box);
+          if (mb) mb.onclick = function () {
+            var q0 = st.onlineQ, page = (st.page || 1) + 1;
+            st.loadingMore = true; renderRes();
+            offSearch(q0, null, page).then(function (more) {
+              var seen = {};
+              (st.online || []).forEach(function (f) { seen[f.key] = 1; });
+              var add = more.filter(function (f) { return !seen[f.key]; });
+              if (st.onlineQ === q0) { st.online = (st.online || []).concat(add); st.page = page; st.more = add.length >= 10; st.cache[q0] = st.online; }
+            }).catch(function () { toast('Non riesco a caricare altri prodotti. Riprova tra poco.', { err: true }); })
+              .then(function () { st.loadingMore = false; if (Sheet.stack.indexOf(scr) >= 0) renderRes(); });
+          };
           var ask = $('[data-a=ask-ai]', box);
           if (ask) ask.onclick = function () { openAI('text', { text: qq, auto: true }); };
           $$('.list', box).forEach(function (ul) { bindFoodList(ul, list, pick); });
@@ -2248,7 +2873,14 @@ window.MV_FOODS = [
       render: function (el) {
         var fav = !!(S.foods[food.key] && S.foods[food.key].fav);
         var step = u === 'porz.' ? 0.5 : (u === 'ml' ? 25 : 10);
-        var presets = u === 'porz.' ? [0.5, 1, 2] : uniq([food.def, 50, 100, 200].filter(function (x) { return x > 0; })).slice(0, 4);
+        var units = u === 'porz.' ? null : food.units, presets;   // [grammi, etichetta]
+        if (u === 'porz.') presets = [0.5, 1, 2].map(function (p) { return [p, f1(p) + ' porz.']; });
+        else if (units) {
+          var u0 = units[0], mult = u0.g >= 250 ? [0.5, 1, 2] : [1, 2, 3];
+          presets = mult.map(function (m) { return [r1(u0.g * m), unitText(m, u0) + ' · ' + f0(u0.g * m) + ' ' + u]; })
+            .concat(units.slice(1, 3).map(function (x) { return [x.g, unitText(1, x) + ' · ' + f0(x.g) + ' ' + u]; }))
+            .concat([100].filter(function (g) { return !units.some(function (x) { return Math.abs(x.g - g) < 3 || Math.abs(x.g * 2 - g) < 3; }); }).map(function (g) { return [g, g + ' ' + u]; }));
+        } else presets = uniq([food.def, 50, 100, 200].filter(function (x) { return x > 0; })).slice(0, 4).map(function (p) { return [p, f0(p) + ' ' + u]; });
         var cooks = food.rawBase ? cookList(food.cat) : null;
         el.innerHTML =
           '<div class="stack">' +
@@ -2257,7 +2889,8 @@ window.MV_FOODS = [
               return '<button class="chip' + ((food.cook || 'crudo') === m[0] ? ' on' : '') + '" data-c="' + m[0] + '">' + esc(cap(cookLabel(m, food.cat))) + '</button>';
             }).join('') + '</div></div>' : '') +
             '<div class="qty"><button class="stepbtn" data-s="-1" aria-label="Diminuisci">−</button><input class="input num" id="f-qty" inputmode="decimal" aria-label="Quantità"><span class="unit">' + (u === 'porz.' ? 'porz.' : u) + '</span><button class="stepbtn" data-s="1" aria-label="Aumenta">+</button></div>' +
-            '<div class="chips">' + presets.map(function (p) { return '<button class="chip" data-p="' + p + '">' + (u === 'porz.' ? f1(p) + ' porz.' : f0(p) + ' ' + u) + '</button>'; }).join('') + '</div>' +
+            '<div class="small muted num" id="f-eq" aria-live="polite"></div>' +
+            '<div class="chips wrap" id="f-pre">' + presets.map(function (p) { return '<button class="chip" data-p="' + p[0] + '">' + esc(p[1]) + '</button>'; }).join('') + '</div>' +
             '<div class="nutri" id="f-nut"></div>' +
             '<div class="small faint num">' + (u === 'porz.' ? 'Per porzione: ' : 'Per 100 ' + u + ': ') + f0(food.base.kcal) + ' kcal, proteine ' + fm(food.base.p) + ' g, carboidrati ' + fm(food.base.c) + ' g, grassi ' + fm(food.base.f) + ' g</div>' +
             '<div class="field"><span>Pasto</span><div class="chips" id="f-meal">' + MEALS.map(function (m) { return '<button class="chip' + (m.id === st.meal ? ' on' : '') + '" data-m="' + m.id + '">' + m.label + '</button>'; }).join('') + '</div></div>' +
@@ -2276,6 +2909,9 @@ window.MV_FOODS = [
             '<div><b class="num">' + fm(n.c) + '</b><span><i class="dot c-carb"></i>carb. g</span></div>' +
             '<div><b class="num">' + fm(n.f) + '</b><span><i class="dot c-fat"></i>grassi g</span></div>';
           $('[data-a=ok]', el).disabled = !(st.qty > 0);
+          var eq = units ? unitFor(st.qty, units) : '';
+          $('#f-eq', el).textContent = eq ? '= ' + eq : '';
+          $$('#f-pre .chip', el).forEach(function (c) { c.classList.toggle('on', Math.abs(+c.getAttribute('data-p') - st.qty) < 0.01); });
         }
         qi.value = String(r1(st.qty)).replace('.', ',');
         qi.addEventListener('input', function () { st.qty = num(qi.value) || 0; show(); });
@@ -2340,8 +2976,23 @@ window.MV_FOODS = [
 
   /* ================= Scanner ================= */
   function openScanner() {
-    Sheet.push({ full: true, title: 'Codice a barre', render: scanScreen, onClose: function () { Scanner.stop(); } });
+    // App Android: scanner di Google (Play Services), il più affidabile su qualsiasi codice
+    if (NATIVE && NATIVE.scanBarcode && !UI.webScan) {
+      window.MV_nativeScan = function (raw, fmt) {
+        window.MV_nativeScan = null;
+        if (raw == null) {
+          if (fmt === 'error') { UI.webScan = true; toast('Lo scanner di Google non è disponibile: uso quello dell\'app.'); Sheet.push(webScannerScreen()); }
+          return;
+        }
+        var code = gtinFromRaw(raw, fmt);
+        if (!code) { toast('Questo codice non identifica un prodotto: inquadra il codice a barre della confezione.', { err: true }); return; }
+        Sheet.push(codeScreen(code, { native: true }));
+      };
+      try { NATIVE.scanBarcode(); return; } catch (e) { window.MV_nativeScan = null; }
+    }
+    Sheet.push(webScannerScreen());
   }
+  function webScannerScreen() { return { full: true, title: 'Codice a barre', render: scanScreen, onClose: function () { Scanner.stop(); } }; }
   function scanScreen(el) {
     el.innerHTML =
       '<div class="scan">' +
@@ -2378,31 +3029,11 @@ window.MV_FOODS = [
       });
     }
     function found(code) {
+      Scanner.stop();
       ret.classList.add('hit');
-      say('<b class="num">' + esc(code) + '</b>Cerco il prodotto…');
-      lookupCode(code).then(function (food) {
-        if (!food) { notFound(code); return; }
-        if (food.incomplete) {
-          toast('Il prodotto non ha i valori nutrizionali: inseriscili dall\'etichetta.');
-          Sheet.replace(manualScreen({ toDiary: true, saveMine: true, name: food.name, brand: food.brand, code: code }));
-          return;
-        }
-        Sheet.replace(foodScreen(food, { meal: UI.addMeal || defaultMeal(), fromAdd: true }));
-      }).catch(function () {
-        say(PREVIEW ? '<b class="num">Codice letto: ' + esc(code) + '</b>Nell\'anteprima la ricerca del prodotto è bloccata: nell\'app installata qui compare il prodotto.' : '<b>Non riesco a cercare il prodotto</b>Controlla la connessione e riprova.');
-        setAlt([['Riprova', function () { found(code); }], ['Scansiona di nuovo', function () { resetAlt(); live(); }]]);
-      });
+      say('<b class="num">' + esc(code) + '</b>Codice letto');
+      setTimeout(function () { var top = Sheet.stack[Sheet.stack.length - 1]; if (top && top.full) Sheet.replace(codeScreen(code)); }, 180);
     }
-    function notFound(code) {
-      say('<b>Prodotto non trovato</b><span class="num">' + esc(code) + '</span> non è su Open Food Facts. Inseriscilo una volta: la prossima scansione lo troverà.');
-      setAlt([['Inseriscilo tu', function () { Sheet.replace(manualScreen({ toDiary: true, saveMine: true, code: code })); }], ['Scansiona di nuovo', function () { resetAlt(); live(); }]]);
-    }
-    var altBox = $('#sc-alt', el), altHTML = altBox.innerHTML;
-    function setAlt(btns) {
-      altBox.innerHTML = btns.map(function (b, i) { return '<button class="btn" data-alt="' + i + '">' + esc(b[0]) + '</button>'; }).join('');
-      $$('[data-alt]', altBox).forEach(function (b) { b.onclick = btns[+b.getAttribute('data-alt')][1]; });
-    }
-    function resetAlt() { altBox.innerHTML = altHTML; }
     el.querySelector('.scan').addEventListener('click', function (e) {
       var t = e.target.closest('[data-a]');
       if (!t) return;
@@ -2434,16 +3065,144 @@ window.MV_FOODS = [
     live();
   }
 
+  /* ================= Prodotto dal codice a barre ================= */
+  function codeKind(code) {
+    if (code.length === 13 && /^97[89]/.test(code)) return 'book';
+    if (code.length === 13 && /^977/.test(code)) return 'mag';
+    if (code[0] === '2' && (code.length === 13 || code.length === 12 || code.length === 8)) return 'store';   // prodotti pesati al banco
+    return '';
+  }
+  // Cerca il prodotto e, se non c'è, offre tutte le strade: etichetta letta dall'AI, ricerca del codice su internet, nome, valori a mano.
+  function codeScreen(code, opts) {
+    opts = opts || {};
+    var kind = codeKind(code), food = kind !== 'book' && kind !== 'mag';
+    var st = { phase: 'loading', food: null, err: '', ctl: null, dead: false, started: false, autoDone: false };
+    var scr = {
+      title: 'Codice a barre',
+      onClose: function () { st.dead = true; if (st.ctl) st.ctl.abort(); },
+      render: function (el) {
+        if (!st.started) { st.started = true; start(el); return; }
+        if (st.phase === 'loading' || st.phase === 'search' || st.phase === 'label') {
+          var t = st.phase === 'loading' ? ['Cerco il prodotto…', 'Codice ' + code]
+            : st.phase === 'search' ? ['Cerco il codice su internet…', 'L\'AI controlla siti di supermercati e produttori.'] : ['Leggo l\'etichetta…', 'Di solito servono pochi secondi.'];
+          el.innerHTML = '<div class="busy">' + spinner() + '<div><b style="color:var(--text)">' + t[0] + '</b><div class="small num">' + esc(t[1]) + '</div></div>' +
+            (st.phase !== 'loading' ? '<button class="btn ghost" data-a="stop">Annulla</button>' : '') + '</div>';
+          var sb = $('[data-a=stop]', el);
+          if (sb) sb.onclick = function () { if (st.ctl) st.ctl.abort(); st.ctl = null; st.phase = 'menu'; scr.render(el); };
+          return;
+        }
+        var ai = AI.available(), head;
+        if (st.phase === 'error') head = '<b>Non riesco a cercare il prodotto</b><span>' + (PREVIEW ? 'Nell\'anteprima la ricerca su Open Food Facts è bloccata: nell\'app installata qui compare il prodotto.' : 'Controlla la connessione e riprova.') + '</span>';
+        else if (!food) head = '<b>Non è un alimento</b><span>Il codice ' + code + ' è di ' + (kind === 'book' ? 'un libro' : 'una rivista') + '. Inquadra il codice a barre sulla confezione del cibo.</span>';
+        else if (kind === 'store' && !st.food) head = '<b>Codice interno del supermercato</b><span>I prodotti pesati al banco (salumi, formaggi, carne, frutta, pane) hanno un codice del negozio che non dice di che prodotto si tratta. Cercalo per nome o fotografa l\'etichetta.</span>';
+        else if (st.food) head = '<b>' + esc(st.food.name) + '</b><span>' + (st.food.brand ? esc(st.food.brand) + '. ' : '') + 'Mancano i valori nutrizionali: aggiungili una volta e la prossima scansione li trova.</span>';
+        else head = '<b>Prodotto non ancora nel database</b><span>Il codice ' + code + ' non è su Open Food Facts. Aggiungilo una volta: alla prossima scansione lo trovi subito.</span>';
+        var opt = function (id, ic, title, sub) { return '<button class="opt" data-o="' + id + '">' + icon(ic) + '<div><b>' + title + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</div></button>'; };
+        var needAI = ai ? '' : ' (da attivare)';
+        el.innerHTML = '<div class="stack">' +
+          '<div class="code-head">' + icon('barcode') + '<div>' + head + '</div></div>' +
+          (st.err ? '<div class="notice" role="alert">' + esc(st.err) + '</div>' : '') +
+          '<div class="opt-list code-opts">' +
+            (st.phase === 'error' ? opt('retry', 'refresh', 'Riprova', 'Cerca di nuovo il codice') : '') +
+            (food ? opt('label', 'camera', 'Fotografa la tabella nutrizionale', 'L\'AI legge i valori dall\'etichetta' + needAI) : '') +
+            (food && kind !== 'store' ? opt('search', 'sparkle', 'Cerca il codice su internet', 'L\'AI trova nome e valori del prodotto' + needAI) : '') +
+            opt('name', 'search', 'Cerca per nome', 'Tra alimenti, piatti e marche') +
+            (food ? opt('manual', 'keypad', 'Scrivi i valori a mano', 'Copiali dalla tabella sull\'etichetta') : '') +
+            opt('rescan', 'barcode', 'Scansiona un altro codice', '') +
+          '</div>' +
+          (food && ai ? '<button class="linkbtn" data-a="gal" style="align-self:center">Usa una foto della galleria</button>' : '') +
+          '<input type="file" accept="image/*" capture="environment" id="cs-cam" hidden><input type="file" accept="image/*" id="cs-gal" hidden>' +
+        '</div>';
+        $$('[data-o]', el).forEach(function (b) { b.onclick = function () { act(b.getAttribute('data-o'), el); }; });
+        var pickF = function () { var f = this.files && this.files[0]; this.value = ''; if (f) runLabel(f, el); };
+        $('#cs-cam', el).onchange = pickF; $('#cs-gal', el).onchange = pickF;
+        var gb = $('[data-a=gal]', el);
+        if (gb) gb.onclick = function () { $('#cs-gal', el).click(); };
+      }
+    };
+    function start(el) {
+      st.phase = 'loading'; st.err = ''; scr.render(el);
+      lookupCode(code).then(function (f) {
+        if (st.dead) return;
+        if (f && !f.incomplete) { Sheet.replace(foodScreen(f, { meal: UI.addMeal || defaultMeal(), fromAdd: true })); return; }
+        st.food = f; st.phase = 'menu';
+        // con l'AI attiva il codice si cerca subito anche su internet
+        if (food && !kind && AI.available() && !st.autoDone) { st.autoDone = true; runSearch(el); return; }
+        scr.render(el);
+      }).catch(function () { if (st.dead) return; st.phase = 'error'; scr.render(el); });
+    }
+    function act(id, el) {
+      st.err = '';
+      if ((id === 'label' || id === 'search') && !AI.available()) { Sheet.push(aiSetupScreen(function () { Sheet.back(); })); return; }
+      if (id === 'retry') start(el);
+      else if (id === 'label') $('#cs-cam', el).click();
+      else if (id === 'search') runSearch(el);
+      else if (id === 'name') {
+        UI.pendingQ = (st.food && st.food.name) || '';
+        var below = Sheet.stack[Sheet.stack.length - 2];
+        if (below && below.isAdd) Sheet.back(); else Sheet.replace(addScreen());
+      }
+      else if (id === 'manual') Sheet.replace(manualScreen({ toDiary: true, saveMine: true, code: code, name: st.food ? st.food.name : '', brand: st.food ? st.food.brand : '' }));
+      else if (id === 'rescan') { if (opts.native) Sheet.back(function () { openScanner(); }); else Sheet.replace(webScannerScreen()); }
+    }
+    function fromAI(res, how) {
+      return {
+        toDiary: true, saveMine: true, code: code,
+        name: res.name || (st.food && st.food.name) || '', brand: res.brand || (st.food && st.food.brand) || '',
+        per: res.unit === 'ml' ? '100ml' : '100g', vals: res.vals, qty: res.serving || 100,
+        info: how === 'label' ? 'Valori letti dall\'etichetta con l\'AI: controlla che siano giusti prima di salvare.' : 'Valori trovati su internet dall\'AI: confrontali con l\'etichetta prima di salvare.',
+        warn: res.check ? 'Calorie e macronutrienti non tornano tra loro: ricontrolla i numeri.' : '',
+        sources: res.sources, suggest: res.suggest
+      };
+    }
+    function fail(e, el) {
+      st.phase = 'menu';
+      if (!(e && e.name === 'AbortError')) st.err = aiErrMsg(e);
+      scr.render(el);
+    }
+    function runSearch(el) {
+      var ctl = st.ctl = new AbortController();
+      st.phase = 'search'; st.err = ''; scr.render(el);
+      aiProduct('search', { code: code, name: st.food && st.food.name, brand: st.food && st.food.brand }, ctl.signal).then(function (res) {
+        if (st.dead || st.ctl !== ctl) return;
+        if (res.found && res.vals) { Sheet.replace(manualScreen(fromAI(res, 'search'))); return; }
+        if (res.found && res.name && !st.food) st.food = { name: res.name, brand: res.brand };
+        st.phase = 'menu';
+        var why = res.note ? res.note.replace(/\s*$/, '').replace(/([^.!?])$/, '$1.') + ' ' : 'Non ho trovato questo codice su internet. ';
+        st.err = st.food ? 'Ho trovato il prodotto ma non i suoi valori: fotografa la tabella nutrizionale o scrivili a mano.' : why + 'Fotografa la tabella nutrizionale o scrivi i valori.';
+        scr.render(el);
+      }).catch(function (e) { if (!st.dead && st.ctl === ctl) fail(e, el); });
+    }
+    function runLabel(file, el) {
+      var ctl = st.ctl = new AbortController();
+      st.phase = 'label'; st.err = ''; scr.render(el);
+      imageToJpeg(file, 1600).then(function (img) {
+        if (st.dead || st.ctl !== ctl) return null;
+        return aiProduct('label', { image: img, hint: st.food ? [st.food.name, st.food.brand].filter(Boolean).join(', ') : '' }, ctl.signal);
+      }).then(function (res) {
+        if (!res || st.dead || st.ctl !== ctl) return;
+        if (res.vals) { Sheet.replace(manualScreen(fromAI(res, 'label'))); return; }
+        st.phase = 'menu';
+        st.err = res.note || 'Non riesco a leggere la tabella nutrizionale: avvicinati, mettila a fuoco e riprova.';
+        scr.render(el);
+      }).catch(function (e) { if (!st.dead && st.ctl === ctl) fail(e, el); });
+    }
+    return scr;
+  }
+
   /* ================= Inserimento manuale ================= */
   function openManual(opts) { Sheet.push(manualScreen(opts || {})); }
   function manualScreen(opts) {
-    var st = { per: opts.code ? '100g' : (opts.toDiary ? 'porz' : '100g'), meal: UI.addMeal || defaultMeal(), saveMine: opts.saveMine != null ? opts.saveMine : !opts.toDiary };
+    var st = { per: opts.per || (opts.code ? '100g' : (opts.toDiary ? 'porz' : '100g')), meal: UI.addMeal || defaultMeal(), saveMine: opts.saveMine != null ? opts.saveMine : !opts.toDiary };
     return {
       title: opts.toDiary ? 'Inserimento manuale' : 'Crea un alimento',
       render: function (el) {
         el.innerHTML =
           '<form class="stack" id="m-form" novalidate>' +
-            (opts.code ? '<div class="notice">Codice <b class="num">' + esc(opts.code) + '</b>. Copia i valori dalla tabella nutrizionale dell\'etichetta.</div>' : '') +
+            (opts.info ? '<div class="notice ai-note">' + icon('sparkle', 'sm') + '<span>' + esc(opts.info) + (opts.warn ? ' <b>' + esc(opts.warn) + '</b>' : '') + '</span></div>' : '') +
+            (opts.sources && opts.sources.length ? '<div class="small faint">Fonti: ' + opts.sources.map(function (w) { return '<a href="' + esc(w.uri) + '" target="_blank" rel="noopener">' + esc(w.title || 'sito web') + '</a>'; }).join(', ') + '</div>' : '') +
+            (opts.suggest ? '<iframe class="gsearch" title="Ricerche Google usate" sandbox="allow-popups allow-popups-to-escape-sandbox" srcdoc="' + esc('<base target="_blank">' + opts.suggest) + '"></iframe>' : '') +
+            (opts.code ? '<div class="notice">Codice <b class="num">' + esc(opts.code) + '</b>.' + (opts.vals ? '' : ' Copia i valori dalla tabella nutrizionale dell\'etichetta.') + '</div>' : '') +
             '<label class="field"><span>Nome</span><input class="input" id="m-name" required maxlength="80" placeholder="Es. Pasta al ragù della mamma" value="' + esc(opts.name || '') + '"></label>' +
             '<label class="field"><span>Marca (facoltativa)</span><input class="input" id="m-brand" maxlength="60" value="' + esc(opts.brand || '') + '"></label>' +
             '<div class="field"><span>I valori si riferiscono a</span><div class="seg" id="m-per"><button type="button" data-v="100g">100 g</button><button type="button" data-v="100ml">100 ml</button><button type="button" data-v="porz">1 porzione</button></div></div>' +
@@ -2472,6 +3231,10 @@ window.MV_FOODS = [
         setPer(st.per);
         var qf = $('#m-qty', el);
         if (qf) qf.addEventListener('input', function () { qf.dataset.auto = '0'; });
+        if (opts.vals) {
+          [['#m-kcal', opts.vals.kcal], ['#m-p', opts.vals.p], ['#m-c', opts.vals.c], ['#m-f', opts.vals.f]].forEach(function (x) { $(x[0], el).value = String(x[1]).replace('.', ','); });
+        }
+        if (qf && opts.qty) { qf.value = String(opts.qty).replace('.', ','); qf.dataset.auto = '0'; }
         $$('#m-meal .chip', el).forEach(function (b) { b.onclick = function () { st.meal = b.getAttribute('data-m'); $$('#m-meal .chip', el).forEach(function (x) { x.classList.toggle('on', x === b); }); }; });
         $('#m-form', el).onsubmit = function (e) {
           e.preventDefault();
@@ -2482,15 +3245,16 @@ window.MV_FOODS = [
           if (st.per !== 'porz' && (kcal > 905 || p + c + f > 101)) { err.textContent = 'Questi valori sono troppo alti per 100 g: controlla l\'etichetta.'; return; }
           var base = st.per === 'porz' ? { q: 1, u: 'porz.', kcal: kcal, p: p, c: c, f: f } : { q: 100, u: st.per === '100ml' ? 'ml' : 'g', kcal: kcal, p: p, c: c, f: f };
           var mine = $('#m-save', el).checked;
-          var food = { key: (mine ? 'mine:' : 'manual:') + (opts.code || uid()), name: name, brand: $('#m-brand', el).value.trim(), src: mine ? 'mine' : 'manual', base: base, code: opts.code || '', def: base.q, mine: mine };
+          var qty = opts.toDiary ? num($('#m-qty', el).value) : null;
+          if (opts.toDiary && !(qty > 0)) { err.textContent = 'Indica quanto ne hai mangiato.'; return; }
+          var def = qty > 0 ? qty : base.q;
+          var food = { key: (mine ? 'mine:' : 'manual:') + (opts.code || uid()), name: name, brand: $('#m-brand', el).value.trim(), src: mine ? 'mine' : 'manual', base: base, code: opts.code || '', def: def, mine: mine };
           if (mine) {
             var prev = S.foods[food.key] || {};
-            S.foods[food.key] = { key: food.key, name: name, brand: food.brand, src: 'mine', base: base, code: food.code, def: base.q, fav: !!prev.fav, mine: true, n: prev.n || 0, last: prev.last || 0 };
+            S.foods[food.key] = { key: food.key, name: name, brand: food.brand, src: 'mine', base: base, code: food.code, def: def, fav: !!prev.fav, mine: true, n: prev.n || 0, last: prev.last || 0 };
             save();
           }
           if (opts.toDiary) {
-            var qty = num($('#m-qty', el).value);
-            if (!(qty > 0)) { err.textContent = 'Indica quanto ne hai mangiato.'; return; }
             if (!mine) food.key = 'manual:' + uid();
             addEntry(food, qty, st.meal, viewKey());
             Sheet.close(function () { toast(name + ' aggiunto a ' + mealLabel(st.meal)); });
@@ -2504,6 +3268,14 @@ window.MV_FOODS = [
   }
 
   /* ================= AI ================= */
+  function aiErrMsg(e) {
+    if (e && e.code === 'not_granted') return 'Per usare l\'AI in questa anteprima consenti l\'accesso a Claude.';
+    if (e && e.code === 'rate_limited') return 'Troppe richieste in poco tempo. Riprova tra qualche minuto.';
+    if (e && e.code === 'images_unavailable') return 'In questa anteprima non posso inviare foto: usa «Descrivi».';
+    if (e && e.name === 'TypeError') return 'Connessione assente o servizio AI non raggiungibile. Riprova.';
+    if (e && e.message && !e.code) return e.message;
+    return 'L\'analisi non è riuscita. Riprova tra poco.';
+  }
   function spinner() { return '<svg class="spin" viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="22" fill="none" stroke-width="4" stroke-linecap="round"/></svg>'; }
   function openAI(mode, opts) {
     opts = opts || {};
@@ -2534,6 +3306,10 @@ window.MV_FOODS = [
         inp.oninput = function () { st.val = inp.value; };
         $('#k-paste', el).onclick = function () {
           var manual = function () { inp.focus(); toast('Tieni premuto nel campo e scegli «Incolla».'); };
+          if (NATIVE && NATIVE.readClipboard) {
+            var tx = ''; try { tx = String(NATIVE.readClipboard() || '').trim(); } catch (e) { tx = ''; }
+            if (tx) { inp.value = st.val = tx; return; }
+          }
           if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(function (t) { inp.value = st.val = String(t || '').trim(); if (!inp.value) manual(); }).catch(manual);
           else manual();
         };
@@ -2622,13 +3398,7 @@ window.MV_FOODS = [
             if (st.ctl !== ctl || !st.busy) return;
             st.busy = false;
             if (e && (e.name === 'AbortError' || e.code === 'cancelled')) { scr.render(el); return; }
-            var m = 'L\'analisi non è riuscita. Riprova tra poco.';
-            if (e && e.code === 'not_granted') m = 'Per usare l\'AI in questa anteprima consenti l\'accesso a Claude.';
-            else if (e && e.code === 'rate_limited') m = 'Troppe richieste in poco tempo. Riprova tra qualche minuto.';
-            else if (e && e.code === 'images_unavailable') m = 'In questa anteprima non posso inviare foto: usa «Descrivi».';
-            else if (e && e.name === 'TypeError') m = 'Connessione assente o servizio AI non raggiungibile. Riprova.';
-            else if (e && e.message && !e.code) m = e.message;
-            st.err = m;
+            st.err = aiErrMsg(e);
             scr.render(el);
           });
         };
@@ -2854,7 +3624,7 @@ window.MV_FOODS = [
         '<div><b style="color:var(--text)">Analisi AI:</b> foto e descrizioni vengono inviate a Google Gemini solo per la stima; MacroVision non le salva.</div>' +
         '<div><b style="color:var(--text)">Prodotti confezionati:</b> dati da <a href="https://world.openfoodfacts.org" target="_blank" rel="noopener" style="color:var(--brand-a)">Open Food Facts</a>, con licenza ODbL. I valori degli alimenti comuni sono medie indicative.</div>' +
         '<div>MacroVision stima calorie e nutrienti a scopo informativo. Non è un dispositivo medico e non sostituisce il parere di un medico o di un nutrizionista.</div>' +
-        '<div class="faint">Versione ' + CONFIG.VERSION + '</div></div>';
+        '<div class="faint">Versione ' + CONFIG.VERSION + (NATIVE ? ' per Android' : '') + '</div></div>';
     $('#pf-edit', el).onclick = function () { Sheet.open(profileScreen()); };
     $('#gl-edit', el).onclick = function () { Sheet.open(goalsScreen()); };
     $('#gl-calc', el).onclick = function () { if (!S.profile) return; S.goals = calcGoals(S.profile); S.goalsCustom = false; save(); renderAll(); toast('Obiettivi ricalcolati dal profilo'); };
@@ -2961,6 +3731,10 @@ window.MV_FOODS = [
     if (PREVIEW) { toast('Nell\'anteprima il backup su file non è disponibile: funziona nell\'app installata.'); return; }
     var name = 'macrovision-backup-' + dkey(new Date()) + '.json';
     var data = JSON.stringify({ app: 'MacroVision', v: 2, exported: new Date().toISOString(), state: Object.assign({}, S, { aiKey: undefined, aiModel: undefined, aiThink: undefined }) });
+    if (NATIVE && NATIVE.saveFile) {
+      window.MV_nativeSaved = function (ok) { toast(ok ? 'Backup salvato: ' + name : 'Backup non salvato'); };
+      try { NATIVE.saveFile(name, 'application/json', data); return; } catch (e) { /* ripiego sotto */ }
+    }
     var file;
     try { file = new File([data], name, { type: 'application/json' }); } catch (e) { file = new Blob([data], { type: 'application/json' }); }
     if (navigator.canShare && file instanceof File && navigator.canShare({ files: [file] })) {
@@ -3138,7 +3912,12 @@ window.MV_FOODS = [
       UI.lastDay = dkey(today0());
     });
     UI.lastDay = dkey(today0());
-    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !window.MV_DEMO && !window.Capacitor) {
+    // link esterni (Google AI Studio, Open Food Facts) nel browser del telefono quando l'app è quella Android
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[target=_blank]');
+      if (a && NATIVE && NATIVE.openUrl) { e.preventDefault(); try { NATIVE.openUrl(a.href); } catch (x) { /* ok */ } }
+    });
+    if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !window.MV_DEMO && !window.Capacitor && !NATIVE) {
       window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () { /* offline non disponibile */ }); });
     }
   }
