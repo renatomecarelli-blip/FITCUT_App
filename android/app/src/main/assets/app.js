@@ -425,18 +425,19 @@ V.impostazioni = R => {
     ${ANDROID ? '<p class="muted small" style="margin:0">Le spese pagate con Google Pay si segnano da sole; le altre le segni tu con ＋ Spesa o a voce. I dati restano su questo telefono: ogni tanto fai un backup.</p>' : '<p class="muted small" style="margin:0">Le spese le segni tu con ＋ Spesa o a voce. La lettura automatica delle notifiche della banca c\'è solo nell\'app Android. I dati sono salvati nel tuo account Claude: li vedi uguali dal telefono e dal PC.</p>'}</div>
   ${ANDROID ? cardLettura() : ''}
   <div class="card"><header><h2>Backup</h2></header><p class="muted small" style="margin:0">Una copia di tutti i dati in un file, da tenere da parte.</p>
-    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn sm" data-act="esporta">Esporta backup</button><label class="btn sm" for="imp">Importa backup</label><input type="file" id="imp" accept=".json,application/json" hidden></div></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn sm" data-act="esporta">Esporta backup</button>${ANDROID ? '<button class="btn sm" data-act="importaFile">Importa da un file</button><button class="btn sm" data-act="incolla">Incolla il backup</button>' : '<label class="btn sm" for="imp">Importa backup</label><input type="file" id="imp" accept=".json,application/json" hidden>'}</div></div>
   <div class="card"><header><h2>Cancella tutti i dati</h2></header><p class="muted small" style="margin:0">Toglie stipendio, spese fisse, scadenze e movimenti. Prima fai un backup.</p><button class="btn sm danger" data-act="cancellaTutto" style="justify-self:start">Cancella tutto</button></div>`;
 };
 
 function onboarding() {
-  return `<section class="receipt"><div class="lbl"><span>Benvenuto</span><span>Finanze</span></div><h2 style="font-size:26px;margin:12px 0 6px">Partiamo dallo stipendio</h2><p class="muted" style="margin:0">Scrivi tre numeri e l'app comincia a dirti quanto puoi spendere ogni giorno.</p></section>
+  return `<section class="receipt"><div class="lbl"><span>Benvenuto</span><span>Finanze</span></div><h2 style="font-size:26px;margin:12px 0 6px">${ANDROID ? 'Benvenuto nell\'app' : 'Partiamo dallo stipendio'}</h2><p class="muted" style="margin:0">${ANDROID ? 'Importa i tuoi dati qui sotto, oppure scrivi tre numeri e parti da zero.' : 'Scrivi tre numeri e l\'app comincia a dirti quanto puoi spendere ogni giorno.'}</p></section>
+${ANDROID ? '<div class="card"><header><h2>Hai già i tuoi dati?</h2></header><p class="muted small" style="margin:0">Se Claude ti ha mandato il backup, importalo qui e ritrovi tutto com\'era.</p><div class="riga-btn"><button class="btn primary" data-act="importaFile">Importa il file</button><button class="btn" data-act="incolla">Incolla il backup</button></div></div>' : ''}
   <div class="card"><form id="fo" style="display:grid;gap:14px">
-    <div class="field"><label for="oStip">Stipendio di solito</label><input id="oStip" class="amount" inputmode="decimal" placeholder="1.685,00"></div>
+    <div class="field"><label for="oStip">Stipendio di solito</label><input id="oStip" class="amount" inputmode="decimal" placeholder="1.500,00"></div>
     <div class="field"><label for="oGg">Giorno in cui arriva</label><input id="oGg" type="number" min="1" max="28" inputmode="numeric" value="17"></div>
     <div class="field"><label for="oSaldo">Saldo disponibile sul conto adesso</label><input id="oSaldo" class="amount" inputmode="decimal" placeholder="0,00"></div>
     <button class="btn primary">Inizia</button></form></div>
-  ${ANDROID ? '<div class="card"><header><h2>Hai già il file con i tuoi dati?</h2></header><p class="muted small" style="margin:0">Se Claude ti ha mandato il backup, importalo qui e ritrovi tutto com\'era.</p><label class="btn" for="imp">Importa il file</label><input type="file" id="imp" accept=".json,application/json" hidden></div>' : ''}`;
+`;
 }
 function syncTxt() {
   if (ANDROID) return S.caricato ? 'Salvato sul telefono' : '';
@@ -475,6 +476,8 @@ const ACT = {
   carta: () => formMov(null, { categoria: 'carta', nota: 'Carta di credito', addebito: prossimo15() }),
   budget: () => formBudget(),
   esporta: () => esporta(),
+  importaFile: () => { if (ANDROID) chiama('scegliFile'); else { const i = $('imp'); if (i) i.click(); } },
+  incolla: () => { const t = chiama('appunti'); if (!t) return toast('Negli appunti non c\'è niente: prima tocca «Copia» sul backup'); importaTesto(t, 'appunti'); },
   attivaLettura: () => chiama('apriLettura'),
   infoApp: () => chiama('apriInfoApp'),
   attivaAvvisi: () => chiama('chiediNotifiche'),
@@ -521,13 +524,22 @@ async function esporta() {
 }
 function importa(file) {
   const r = new FileReader();
-  r.onload = () => {
-    let b; try { b = JSON.parse(r.result); } catch (e) { return toast('Questo file non è un backup dell\'app'); }
-    if (!b || !b.stato || !Array.isArray(b.movimenti) || !b.stato.saldo) return toast('Questo file non è un backup dell\'app');
-    apri(`<h3 id="sheetTitle">Importare il backup?</h3><p style="margin:0">Prende il posto dei dati di adesso (${b.movimenti.length} movimenti nel file).</p><div class="foot"><button class="btn ghost" data-close>No</button><button class="btn primary" id="siImp">Sì, importa</button></div>`, root => {
+  r.onload = () => importaTesto(r.result, 'file');
+  r.onerror = () => toast('Non riesco a leggere il file');
+  r.readAsText(file);
+}
+// il backup arriva come testo: dal file, dagli appunti o da "Apri con Finanze"
+function importaTesto(testo, da) {
+  const t = String(testo || ''), i = t.indexOf('{'), j = t.lastIndexOf('}');
+  if (i < 0 || j <= i) return toast(da === 'appunti' ? 'Negli appunti non c\'è il backup: prima tocca «Copia» sul backup' : 'Questo file non è un backup dell\'app');
+  let b; try { b = JSON.parse(t.slice(i, j + 1)); } catch (e) { return toast('Il backup è incompleto: copialo o scaricalo di nuovo'); }
+  if (!b || !b.stato || !Array.isArray(b.movimenti) || !b.stato.saldo) return toast('Questo non è un backup dell\'app');
+  {
+    apri(`<h3 id="sheetTitle">Importare il backup?</h3><p style="margin:0">${ST ? 'Prende il posto dei dati di adesso' : 'Carica i tuoi conti'} (${b.movimenti.length} movimenti, ${(b.stato.fisse || []).length} spese fisse).</p><div class="foot"><button class="btn ghost" data-close>No</button><button class="btn primary" id="siImp">Sì, importa</button></div>`, root => {
       root.querySelector('#siImp').onclick = async () => {
         chiudi(); const vecchi = MOVS.map(m => m.id), nuovi = new Set(b.movimenti.map(m => m.id));
         salvaStato(b.stato); MOVS = b.movimenti.slice(); ordina(); scriviCache(); render();
+        if (location.hash !== '#oggi') location.hash = '#oggi';   // dopo l'importazione mostro subito quanto puoi spendere
         if (!DB) return toast('Backup importato');
         try {
           for (const m of b.movimenti) { const body = clone(m); delete body.id; await DB.collection('movimenti').doc(m.id).set(body); }
@@ -536,8 +548,7 @@ function importa(file) {
         } catch (e) { toast(erroreDb(e)); }
       };
     });
-  };
-  r.readAsText(file);
+  }
 }
 
 function route() {
@@ -564,6 +575,7 @@ async function avvio() {
   }, e => { S.errore = (e && e.code) || 'errore'; render(); });
 }
 window.addEventListener('finanze-ripresa', () => { if (ST) render(); });
+window.addEventListener('finanze-file', e => { const d = e.detail || {}; if (d.errore || d.testo == null) return toast('Non riesco a leggere il file: prova con «Incolla il backup»'); importaTesto(d.testo, 'file'); });
 window.addEventListener('finanze-avviso', e => { const a = e.detail || {}; toast([a.titolo, a.testo].filter(Boolean).join(' — ')); });
 avvio();
 window.__app = { leggiFrase, ENG, stato: () => ({ ST, MOVS, S }) };
