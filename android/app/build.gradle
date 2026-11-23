@@ -1,0 +1,44 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'io.github.renatomecarelli.finanze'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'io.github.renatomecarelli.finanze'
+        minSdk 29
+        targetSdk 34
+        def numero = (project.findProperty('versionCode') ?: '1').toString()
+        versionCode numero.toInteger()
+        versionName '1.' + numero
+    }
+
+    signingConfigs {
+        // chiave fissa: serve solo perché ogni nuova versione si installi sopra la precedente senza perdere i dati
+        finanze {
+            storeFile file('finanze.jks')
+            storePassword 'QbRoBDC9caJJHDQpDQoD'
+            keyAlias 'finanze'
+            keyPassword 'QbRoBDC9caJJHDQpDQoD'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.finanze
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

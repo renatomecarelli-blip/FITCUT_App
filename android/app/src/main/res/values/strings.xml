@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nome">Finanze</string>
+    <string name="ascolto">Finanze: segna le spese di Google Pay e legge le mail di MPS</string>
+</resources>
