@@ -6,10 +6,15 @@
   const ordina = l => l.sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : (b.creato || 0) - (a.creato || 0));
   const snapDoc = () => { const v = D.stato(); return { exists: v != null, data: () => v, metadata: { fromCache: false } }; };
   const snapCol = () => ({ docs: ordina(D.movimenti()).map(m => { const b = Object.assign({}, m); delete b.id; return { id: m.id, data: () => b }; }) });
-  let attesa = 0;
+  let attesa = 0, ultima = null;
+  const firma = () => (A.leggi('stato') || '') + '\u0001' + A.movimenti();
+  // avvisa la pagina che i dati sono cambiati (se non sono cambiati non ridisegna: così non si perdono i campi che stai scrivendo)
   const avvisa = () => {
     clearTimeout(attesa);
-    attesa = setTimeout(() => { const a = snapDoc(), b = snapCol(); docL.forEach(f => { try { f(a); } catch (e) { } }); colL.forEach(f => { try { f(b); } catch (e) { } }); }, 0);
+    attesa = setTimeout(() => {
+      const f = firma(); if (f === ultima) return; ultima = f;
+      const a = snapDoc(), b = snapCol(); docL.forEach(f => { try { f(a); } catch (e) { } }); colL.forEach(f => { try { f(b); } catch (e) { } });
+    }, 0);
   };
   D.ascolta(avvisa);
   let k = 0;
@@ -18,7 +23,7 @@
     doc: () => ({
       set: v => { D.salvaStato(v); avvisa(); return Promise.resolve(); },
       delete: () => { D.salvaStato(null); avvisa(); return Promise.resolve(); },
-      onSnapshot: cb => { docL.push(cb); setTimeout(() => cb(snapDoc()), 0); return () => { }; }
+      onSnapshot: cb => { docL.push(cb); setTimeout(() => { ultima = firma(); cb(snapDoc()); }, 0); return () => { }; }
     }),
     collection: () => ({
       doc: x => {
@@ -50,6 +55,8 @@
         if (voce.s) voce.s({ state: 'idle', reason: e.testo ? 'fine' : 'viewer_stopped' });
       } else if (e.tipo === 'salvato') {
         if (salva) { const s = salva; salva = null; if (e.ok) s.ok(); else s.no({ code: 'declined' }); }
+      } else if (e.tipo === 'file') {
+        window.dispatchEvent(new CustomEvent('finanze-file', { detail: e }));
       } else if (e.tipo === 'ripresa') {
         this.elabora(); avvisa(); window.dispatchEvent(new Event('finanze-ripresa'));
       }

@@ -8,34 +8,7 @@ const out = { errori: [], passi: {} };
 let ok = 0, ko = 0;
 const verifica = (c, n, info) => { if (c) ok++; else { ko++; console.log('❌', n, info !== undefined ? JSON.stringify(info) : ''); } };
 
-const FINTO = `(() => {
-  const B = ${JSON.stringify(backup)};
-  const salvato = sessionStorage.getItem('telefono');
-  const sp = salvato ? JSON.parse(salvato) : { stato: JSON.stringify(B.stato), movimenti: JSON.stringify(Object.fromEntries(B.movimenti.map(m => { const b = Object.assign({}, m); delete b.id; return [m.id, b]; }))), coda: '[]', registro: '[]' };
-  if (sessionStorage.getItem('vuoto') === '1' && !salvato) { delete sp.stato; sp.movimenti = '{}'; }
-  const salva = () => sessionStorage.setItem('telefono', JSON.stringify(sp));
-  window.__tel = { sp, lettura: false, notifiche: true, chiamate: [] };
-  const T = window.__tel;
-  window.Android = {
-    leggi: k => sp[k] == null ? null : sp[k],
-    scrivi: (k, v) => { if (v === '' || v == null) delete sp[k]; else sp[k] = v; salva(); },
-    movimenti: () => sp.movimenti || '{}',
-    movSalva: (id, b) => { const o = JSON.parse(sp.movimenti || '{}'); o[id] = JSON.parse(b); sp.movimenti = JSON.stringify(o); salva(); },
-    movCancella: id => { const o = JSON.parse(sp.movimenti || '{}'); delete o[id]; sp.movimenti = JSON.stringify(o); salva(); },
-    codaLeggi: () => sp.coda || '[]',
-    codaTogli: n => { const a = JSON.parse(sp.coda || '[]'); a.splice(0, n); sp.coda = JSON.stringify(a); salva(); },
-    registro: () => sp.registro || '[]',
-    registra: v => { const a = JSON.parse(sp.registro || '[]'); a.push(JSON.parse(v)); sp.registro = JSON.stringify(a.slice(-40)); salva(); },
-    letturaAttiva: () => T.lettura, notificheAttive: () => T.notifiche, versione: () => '1.1',
-    puoiDettare: () => true,
-    detta: () => { T.chiamate.push('detta'); setTimeout(() => __ponte.evento({ tipo: 'dettato', testo: T.frase || '3 euro e 50 al bar' }), 300); },
-    salvaFile: (n, d) => { T.chiamate.push('salva:' + n + ':' + d.length); setTimeout(() => __ponte.evento({ tipo: 'salvato', ok: true }), 200); },
-    apriLettura: () => { T.chiamate.push('apriLettura'); T.lettura = true; setTimeout(() => __ponte.evento({ tipo: 'ripresa' }), 200); },
-    apriInfoApp: () => T.chiamate.push('infoApp'),
-    chiediNotifiche: () => T.chiamate.push('chiediNotifiche')
-  };
-  T.accoda = n => { const a = JSON.parse(sp.coda || '[]'); a.push(n); sp.coda = JSON.stringify(a); salva(); };
-})();`;
+const FINTO = require('./telefono_finto.js')(backup);
 
 (async () => {
   const CP = 9531;
@@ -129,8 +102,41 @@ const FINTO = `(() => {
     // primo avvio senza dati
     await ev("sessionStorage.clear(); sessionStorage.setItem('vuoto', '1'); localStorage.clear()");
     await send('Page.reload'); await until("!!document.getElementById('fo')", 8000);
-    verifica(await ev("document.body.innerText.includes('Hai già il file con i tuoi dati?') && !!document.getElementById('imp')"), 'primo avvio: importa il file');
+    verifica(await ev("document.body.innerText.includes('Hai già i tuoi dati?') && !!document.querySelector('[data-act=importaFile]') && !!document.querySelector('[data-act=incolla]')"), 'primo avvio: importa o incolla');
     await foto('8_primo_avvio.png');
+    // scrivo nel modulo e torno nell'app: quello che ho scritto resta
+    await ev("document.getElementById('oStip').value = '1.500,00'; __ponte.evento({ tipo: 'ripresa' })"); await sleep(300);
+    verifica(await ev("document.getElementById('oStip') && document.getElementById('oStip').value") === '1.500,00', 'il ritorno nell\'app non cancella quello che scrivi');
+    // incolla con gli appunti vuoti
+    await clic('[data-act="incolla"]');
+    verifica(/Negli appunti non c'è niente/.test(await ev("document.getElementById('toast').textContent")), 'appunti vuoti: messaggio chiaro', await ev("document.getElementById('toast').textContent"));
+    // incolla il backup copiato dalla chat (anche con roba intorno)
+    await ev("__tel.appunti = '```json\\n' + JSON.stringify(" + JSON.stringify(backup) + ") + '\\n```'");
+    await clic('[data-act="incolla"]');
+    verifica(await until("document.getElementById('sheet').classList.contains('on') && !!document.getElementById('siImp')", 2000), 'incolla: chiede conferma', await ev("document.getElementById('toast').textContent"));
+    out.passi.conferma = await ev("document.getElementById('sheetIn').innerText.replace(/\\s+/g, ' ')");
+    await clic('#siImp');
+    verifica(await until("window.__app.stato().ST && window.__app.stato().ST.saldo.importo === 256.37 && window.__app.stato().MOVS.length === " + backup.movimenti.length, 3000), 'incolla: dati caricati', await ev("window.__app.stato().MOVS.length"));
+    verifica(await until("!!document.querySelector('.receipt')", 2000), 'dopo l\'importazione si vede Oggi');
+    await foto('9_dopo_incolla.png');
+    // di nuovo da zero, col file scelto dall'app
+    await ev("sessionStorage.clear(); sessionStorage.setItem('vuoto', '1'); localStorage.clear()");
+    await send('Page.reload'); await until("!!document.getElementById('fo')", 8000);
+    await clic('[data-act="importaFile"]');
+    verifica(await until("!!document.getElementById('siImp')", 3000), 'file scelto: chiede conferma');
+    await clic('#siImp');
+    verifica(await until("window.__app.stato().ST && window.__app.stato().MOVS.length === " + backup.movimenti.length, 3000), 'file scelto: dati caricati');
+    // "Apri con Finanze" quando i dati ci sono già
+    await ev("__ponte.evento({ tipo: 'file', testo: JSON.stringify(" + JSON.stringify(backup) + ") })");
+    verifica(await until("!!document.getElementById('siImp') && document.getElementById('sheetIn').innerText.includes('Prende il posto dei dati di adesso')", 2000), 'apri con: chiede se sostituire');
+    await ev("__ponte.indietro()");
+    await ev("__ponte.evento({ tipo: 'file', errore: true })");
+    verifica(/Non riesco a leggere il file/.test(await ev("document.getElementById('toast').textContent")), 'file illeggibile: messaggio chiaro');
+    await ev("__ponte.evento({ tipo: 'file', testo: 'ciao' })");
+    verifica(/non è un backup/.test(await ev("document.getElementById('toast').textContent")), 'file sbagliato: messaggio chiaro');
+    // impostazioni: i bottoni del backup
+    await ev("location.hash = '#impostazioni'"); await sleep(200);
+    verifica(await ev("!!document.querySelector('[data-act=importaFile]') && !!document.querySelector('[data-act=incolla]') && !document.getElementById('imp')"), 'impostazioni: importa e incolla');
   } catch (e) { out.fatale = String(e && e.stack || e); }
   verifica(!out.errori.length, 'nessun errore nella pagina', out.errori);
   console.log(JSON.stringify(out.passi, null, 1));

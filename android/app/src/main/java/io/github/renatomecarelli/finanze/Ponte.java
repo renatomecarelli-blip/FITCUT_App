@@ -105,6 +105,16 @@ final class Ponte {
     }
 
     @JavascriptInterface
+    public void scegliFile() {
+        if (m != null) m.runOnUiThread(m::scegliFile);
+    }
+
+    @JavascriptInterface
+    public String appunti() {
+        return m == null ? "" : m.appunti();
+    }
+
+    @JavascriptInterface
     public void apriLettura() {
         if (m != null) m.runOnUiThread(m::apriLettura);
     }

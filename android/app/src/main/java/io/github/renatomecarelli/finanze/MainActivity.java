@@ -1,6 +1,8 @@
 package io.github.renatomecarelli.finanze;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -19,6 +21,8 @@ import android.webkit.WebViewClient;
 
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -26,12 +30,14 @@ import java.util.ArrayList;
 /** L'app: una pagina (assets/index.html) con i conti, più quello che serve dal telefono. */
 public class MainActivity extends Activity {
     static MainActivity attiva;
-    private static final int R_FILE = 11, R_SALVA = 12, R_VOCE = 13, R_PERMESSO = 14;
+    private static final int R_FILE = 11, R_SALVA = 12, R_VOCE = 13, R_PERMESSO = 14, R_APRI = 15;
     private static final String NOTIFICHE = "android.permission.POST_NOTIFICATIONS";
 
     private WebView web;
     private ValueCallback<Uri[]> scelta;
     private String daSalvare;
+    private boolean paginaPronta;
+    private String fileInAttesa;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -45,6 +51,16 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(true);
         web.addJavascriptInterface(new Ponte(this, this), "Android");
         web.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView v, String url) {
+                paginaPronta = true;
+                if (fileInAttesa != null) {
+                    String f = fileInAttesa;
+                    fileInAttesa = null;
+                    evento(f);
+                }
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
                 Uri u = r.getUrl();
@@ -74,6 +90,79 @@ public class MainActivity extends Activity {
         });
         web.loadUrl("file:///android_asset/index.html");
         primaVoltaNotifiche();
+        apriDaFuori(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent i) {
+        super.onNewIntent(i);
+        setIntent(i);
+        apriDaFuori(i);
+    }
+
+    /** il backup aperto con "Apri con Finanze" o "Condividi → Finanze" */
+    private void apriDaFuori(Intent i) {
+        if (i == null) return;
+        String a = i.getAction();
+        Uri u = null;
+        if (Intent.ACTION_VIEW.equals(a)) u = i.getData();
+        else if (Intent.ACTION_SEND.equals(a)) {
+            u = i.getParcelableExtra(Intent.EXTRA_STREAM);
+            if (u == null) {
+                CharSequence t = i.getCharSequenceExtra(Intent.EXTRA_TEXT);
+                if (t != null) consegna(t.toString());
+                return;
+            }
+        } else return;
+        if (u != null) consegna(leggiTesto(u));
+        i.setAction(Intent.ACTION_MAIN);   // se l'app si riapre non lo rifà
+    }
+
+    private void consegna(String testo) {
+        String e = testo == null ? "{\"tipo\":\"file\",\"errore\":true}" : "{\"tipo\":\"file\",\"testo\":" + JSONObject.quote(testo) + "}";
+        if (paginaPronta) evento(e);
+        else fileInAttesa = e;
+    }
+
+    private String leggiTesto(Uri u) {
+        try (InputStream in = getContentResolver().openInputStream(u)) {
+            if (in == null) return null;
+            ByteArrayOutputStream b = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n, tot = 0;
+            while ((n = in.read(buf)) > 0) {
+                b.write(buf, 0, n);
+                tot += n;
+                if (tot > 5000000) return null;
+            }
+            return b.toString("UTF-8");
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    // 📂 scegli il file del backup
+    void scegliFile() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*");
+        try {
+            startActivityForResult(i, R_APRI);
+        } catch (Exception e) {
+            evento("{\"tipo\":\"file\",\"errore\":true}");
+        }
+    }
+
+    /** il testo copiato negli appunti (per "Incolla il backup") */
+    String appunti() {
+        try {
+            ClipboardManager cm = getSystemService(ClipboardManager.class);
+            if (cm == null || !cm.hasPrimaryClip()) return "";
+            ClipData c = cm.getPrimaryClip();
+            if (c == null || c.getItemCount() == 0) return "";
+            CharSequence t = c.getItemAt(0).coerceToText(this);
+            return t == null ? "" : t.toString();
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     @Override
@@ -211,6 +300,9 @@ public class MainActivity extends Activity {
                 scelta.onReceiveValue(u == null ? null : new Uri[]{u});
                 scelta = null;
             }
+        } else if (req == R_APRI) {
+            Uri u = res == RESULT_OK && data != null ? data.getData() : null;
+            if (u != null) consegna(leggiTesto(u));
         } else if (req == R_SALVA) {
             boolean ok = false;
             Uri u = res == RESULT_OK && data != null ? data.getData() : null;
