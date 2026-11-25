@@ -63,6 +63,19 @@ const FINTO = require('./telefono_finto.js')(backup);
     await ev(`__tel.accoda(${JSON.stringify({ app: 'com.google.android.apps.walletnfcrel', titolo: 'BAR TABACCHERIA CENTRALE', testo: '2,40 € con MPS Debit Mastercard ••1234', quando: ora + 600000 })}); __ponte.elabora()`);
     verifica(await until("window.__app.stato().MOVS.some(m => m.importo === 2.4 && m.categoria === 'svago')", 3000), 'stesso negozio, categoria giusta');
 
+    // sforo: in grande quanto posso spendere da domani
+    await ev(`__tel.accoda(${JSON.stringify({ app: 'com.google.android.apps.walletnfcrel', titolo: 'PIZZERIA DA GINO', testo: '30,00 € con MPS Debit Mastercard ••1234', quando: ora + 900000 })}); __ponte.elabora()`);
+    verifica(await until("document.querySelector('.receipt').innerText.includes('Oggi hai sforato di') && document.querySelector('.receipt').innerText.includes('Da domani puoi spendere')", 3000), 'sforo: da domani in grande', await ev("document.querySelector('.receipt').innerText.slice(0, 160)"));
+    verifica(await ev("!document.querySelector('.receipt .big').classList.contains('neg') && /al giorno/.test(document.querySelector('.receipt .big').textContent)"), 'sforo: numero grande non rosso', await ev("document.querySelector('.receipt .big').textContent"));
+    out.passi.sforo = await ev("document.querySelector('.receipt').innerText.replace(/\\s+/g, ' ')");
+    await foto('2b_sforo.png');
+    // carta di credito: di base nel mese dopo
+    await ev("location.hash = '#conti'"); await sleep(200);
+    await clic('[data-act="carta"]');
+    verifica(await until("!!document.getElementById('fAdd')", 2000), 'carta: modulo aperto');
+    const prossimo = await ev("ENG.calcola(window.__app.stato().ST, window.__app.stato().MOVS, ENG.iso(new Date())).periodo.prossimo");
+    verifica(await ev("document.getElementById('fData').value + '|' + document.getElementById('fAdd').value") === prossimo + '|' + prossimo, 'carta: nel mese dopo', await ev("document.getElementById('fData').value + '|' + document.getElementById('fAdd').value"));
+    await ev("__ponte.indietro()"); await ev("location.hash = '#oggi'"); await sleep(200);
     // voce
     await clic('[data-act="detta"]');
     verifica(await until("document.getElementById('sheet').classList.contains('on') && document.getElementById('fImp').value === '3,50'", 3000), 'detta una spesa', await ev("document.getElementById('fImp') && document.getElementById('fImp').value"));
@@ -95,7 +108,7 @@ const FINTO = require('./telefono_finto.js')(backup);
 
     // ricarico: i dati restano
     await send('Page.reload'); await until("!!document.querySelector('.receipt')", 8000);
-    verifica(await ev("window.__app.stato().MOVS.length") === backup.movimenti.length + 3, 'dati ancora lì dopo la riapertura', await ev("window.__app.stato().MOVS.length"));
+    verifica(await ev("window.__app.stato().MOVS.length") === backup.movimenti.length + 4, 'dati ancora lì dopo la riapertura', await ev("window.__app.stato().MOVS.length"));
     await ev("location.hash = '#movimenti'"); await sleep(200);
     await foto('7_movimenti.png');
 

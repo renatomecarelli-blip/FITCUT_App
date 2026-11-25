@@ -45,7 +45,8 @@ const ENG = (() => {
     const spese = movs.filter(m => m.tipo === 'spesa' && !m.esclusa);   // le spese «non contate» (es. pagate coi soldi di Revolut) restano fuori
     const inP = m => { const d = parse(m.data); return d >= P.S && d <= P.E; };
     const speso = sum(spese.filter(inP).map(m => m.importo));
-    const spesoOggi = sum(spese.filter(m => m.data === oggi).map(m => m.importo));
+    const diOggi = m => m.categoria !== 'carta';   // l'addebito della carta di credito si spalma su tutto il mese, non pesa solo sul giorno in cui arriva
+    const spesoOggi = sum(spese.filter(m => m.data === oggi && diOggi(m)).map(m => m.importo));
     const giorni = Math.round((P.E - T) / 864e5) + 1, giorniTot = Math.round((P.N - P.S) / 864e5);
     const pianoGiorno = (budget - (speso - spesoOggi)) / giorni;
     // 🏦 soldi veri: ultimo saldo inserito + quello che è successo dopo
@@ -61,7 +62,7 @@ const ENG = (() => {
       if (m.esclusa) continue;
       const dd = parse(m.addebito || m.data);
       if (!dopoSaldo(dd, m.creato)) continue;
-      if (m.tipo === 'spesa') { if (dd < T) cassa -= num(m.importo); else if (+dd === +T) spesoOggiConto += num(m.importo); }
+      if (m.tipo === 'spesa') { if (dd < T || (+dd === +T && !diOggi(m))) cassa -= num(m.importo); else if (+dd === +T) spesoOggiConto += num(m.importo); }
       if (m.tipo === 'entrata' && m.categoria !== 'stipendio' && dd <= T) cassa += num(m.importo);   // lo stipendio si conta già nel giorno di paga
     }
     const contoOggi = cassa - spesoOggiConto;   // saldo stimato adesso

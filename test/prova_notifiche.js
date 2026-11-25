@@ -53,6 +53,10 @@ const casi = [
   { n: 'addebito generali', app: GM, titolo: 'Banca Monte dei Paschi di Siena', testo: 'Addebito in conto: un promemoria per te', grande: 'Addebito in conto: un promemoria per te\nCiao Mario, hai ricevuto sul tuo Conto 123456 un addebito di 51,00 EUR. Causale: SDD GENERALI', quando: t('2026-11-30T01:14:00+01:00') },
   { n: 'addebito strano', app: GM, titolo: 'Banca Monte dei Paschi di Siena', testo: 'Addebito in conto: un promemoria per te', grande: 'Addebito in conto: un promemoria per te\nCiao Mario, hai ricevuto sul tuo Conto 123456 un addebito di 23,40 EUR', quando: t('2026-11-26T01:14:00+01:00') },
   { n: 'addebito carta di credito 15/12', app: GM, titolo: 'Banca Monte dei Paschi di Siena', testo: 'Addebito in conto: un promemoria per te', grande: 'Addebito in conto\nCiao Mario, hai ricevuto sul tuo Conto 123456 un addebito di 110,00 EUR', quando: t('2026-12-15T02:00:00+01:00') },
+  { n: 'mps pagamento già con google pay', app: GM, titolo: 'Banca Monte dei Paschi di Siena', testo: 'Addebito in conto: un promemoria per te', grande: 'Addebito in conto: un promemoria per te\nCiao Renato, hai ricevuto sul tuo Conto 632500 un addebito di 23,45 Euro con descrizione Pagam. Mastercard/Maestro. Importo 23,45 Euro Data Addebito 24/11/2026', quando: t('2026-11-24T17:54:00+01:00') },
+  { n: 'mps pagamento non segnato', app: GM, titolo: 'Banca Monte dei Paschi di Siena', testo: 'Addebito in conto: un promemoria per te', grande: 'Addebito in conto: un promemoria per te\nCiao Renato, hai ricevuto sul tuo Conto 632500 un addebito di 9,26 Euro con descrizione Pagam. Mastercard/Maestro. Importo 9,26 Euro Data Addebito 24/11/2026', quando: t('2026-11-24T17:54:30+01:00') },
+  { n: 'mps stesso importo di nuovo', app: GM, titolo: 'Banca Monte dei Paschi di Siena', testo: 'Addebito in conto: un promemoria per te', grande: 'Addebito in conto: un promemoria per te\nCiao Renato, hai ricevuto sul tuo Conto 632500 un addebito di 23,45 Euro con descrizione Pagam. Mastercard/Maestro.', quando: t('2026-11-24T17:55:00+01:00') },
+  { n: 'mps prelievo', app: GM, titolo: 'Banca Monte dei Paschi di Siena', testo: 'Addebito in conto: un promemoria per te', grande: 'Addebito in conto: un promemoria per te\nCiao Renato, hai ricevuto sul tuo Conto 632500 un addebito di 32,10 Euro con descrizione Prelevamento contante Mastercard da Atm. Importo 32,10 Euro Data Addebito 23/11/2026', quando: t('2026-11-24T03:05:00+01:00') },
   { n: 'stipendio', app: GM, titolo: 'Banca Monte dei Paschi di Siena', testo: 'Accredito in conto: un promemoria per te', grande: 'Accredito in conto\nCiao Mario, hai ricevuto sul tuo Conto 123456 un accredito di 1.737,00 EUR', quando: t('2026-12-16T09:00:00+01:00') },
   { n: 'paypal mail', app: GM, titolo: 'PayPal', testo: 'Ricevuta del tuo pagamento a favore di Meta Platforms Ireland Limited', grande: 'Ricevuta del tuo pagamento a favore di Meta Platforms Ireland Limited\nMario Rossi, hai inviato un pagamento. Ciao Mario, hai inviato un pagamento di 5,00 € EUR a Meta Platforms Ireland Limited.', quando: t('2026-11-24T10:00:00+01:00') },
   { n: 'paypal app stesso pagamento', app: PP, titolo: 'PayPal', testo: 'Hai inviato 5,00 € EUR a Meta Platforms Ireland Limited', quando: t('2026-11-24T10:00:05+01:00') },
@@ -72,6 +76,10 @@ const attesi = {
   'addebito generali': r => r.stato && /Generali.*già in lista/.test(r.esito) && !r.avviso && r.stato.periodi['2026-11'].fatti.generali === true,
   'addebito strano': r => r.stato && r.stato.daControllare.length === 1 && r.avviso,
   'addebito carta di credito 15/12': r => /Carta di credito/.test(r.esito) && !r.avviso,
+  'mps pagamento già con google pay': r => !r.stato && r.movs && r.movs.length === 1 && r.movs[0].banca === true && /Conad/.test(r.movs[0].nota) && /già segnata/.test(r.esito),
+  'mps pagamento non segnato': r => r.movs && r.movs[0].fonte === 'mail' && r.movs[0].importo === 9.26 && r.movs[0].data === '2026-11-24' && r.movs[0].nota === 'Pagamento con carta' && r.avviso,
+  'mps stesso importo di nuovo': r => r.movs && r.movs[0].fonte === 'mail' && r.movs[0].importo === 23.45 && r.movs[0].data === '2026-11-24',
+  'mps prelievo': r => r.movs && r.movs[0].nota === 'Prelievo contanti' && r.movs[0].importo === 32.1 && r.movs[0].data === '2026-11-23',
   'stipendio': r => r.stato && r.stato.periodi['2026-12'].stipendio === 1737 && r.movs[0].data === '2026-12-17' && /Dal 17 \(nuovo mese\) puoi spendere/.test(r.avviso.testo),
   'paypal mail': r => r.movs && r.movs[0].importo === 5 && r.movs[0].categoria === 'online' && /Meta Platforms/.test(r.movs[0].nota),
   'paypal app stesso pagamento': r => !r.movs && /già/.test(r.esito),
@@ -88,14 +96,14 @@ for (const c of casi) {
   verifica(attesi[c.n](r), c.n, r.esito + (r.avviso ? ' | ' + r.avviso.titolo + ' — ' + r.avviso.testo : ''));
   console.log('·', c.n.padEnd(32), '→', r.esito, r.avviso ? '| 🔔 ' + r.avviso.titolo + ' — ' + r.avviso.testo : '');
   if (r.stato) ST = r.stato;
-  for (const m of r.movs || []) MOVS.push(m);
+  for (const m of r.movs || []) MOVS = MOVS.filter(x => x.id !== m.id).concat([m]);
 }
 // coda vera, con i dati salvati sul telefono finto
 const av = JSON.parse(FIN.elaboraCoda());
 const salvati = FIN.dati.movimenti(), st2 = FIN.dati.stato();
 verifica(JSON.parse(tel.sp.coda).length === 0, 'coda svuotata');
 FIN.impostaOra();
-verifica(salvati.length === MOV0.length + 5, 'movimenti salvati (5 nuovi)', salvati.length - MOV0.length);
+verifica(salvati.length === MOV0.length + 8, 'movimenti salvati (8 nuovi)', salvati.length - MOV0.length);
 verifica(st2.saldo.importo === 222.85 && st2.daControllare.length === 2, 'stato salvato', st2.saldo);
 verifica(JSON.parse(tel.sp.registro).length === casi.length, 'registro', JSON.parse(tel.sp.registro).length);
 verifica(av.length === 3, 'avvisi (ultimi 3)', av.length);

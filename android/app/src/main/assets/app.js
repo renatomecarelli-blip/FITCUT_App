@@ -322,7 +322,7 @@ function cardLettura() {
       <div class="item stato"><span class="pallino ${nt ? 'si' : ''}"></span><span><span class="t">Avvisi dell'app</span><br><span class="d">${nt ? 'Dopo ogni spesa ti dice quanto puoi spendere ancora' : 'Spenti: non vedrai il messaggio dopo ogni spesa'}</span></span>${nt ? '<span></span>' : '<button class="btn sm primary" data-act="attivaAvvisi">Attiva</button>'}</div>
     </div>
     ${on ? '' : `<div class="note"><strong>Se l'interruttore è grigio</strong><span>Android lo blocca per le app installate fuori dal Play Store. 1) Tocca «Attiva» una volta. 2) Tocca «Apri info app», poi i tre puntini in alto a destra e «Consenti impostazioni con restrizioni». 3) Torna qui e tocca di nuovo «Attiva».</span><button class="btn sm" data-act="infoApp" style="justify-self:start">Apri info app</button></div>`}
-    <p class="small muted" style="margin:0">Cosa legge: <b>Google Pay</b> (le spese, subito) · <b>mail di MPS</b> in Gmail (saldo del mattino, addebiti, stipendio) · <b>PayPal</b>. Nell'app Gmail lascia accese le notifiche.</p>
+    <p class="small muted" style="margin:0">Cosa legge: <b>Google Pay</b> (le spese, subito) · <b>mail di MPS</b> in Gmail (saldo del mattino, pagamenti con carta e prelievi, addebiti, stipendio) · <b>PayPal</b>. Se una spesa della mail MPS c'è già la riconosco, se manca la segno io. Nell'app Gmail lascia accese le notifiche.</p>
     <h3 class="sub">Ultime notifiche lette</h3>
     <div class="list">${reg.length ? reg.map(r => `<div class="item"><span class="date"><b>${new Date(r.quando).getDate()}</b>${MESI[new Date(r.quando).getMonth()]}</span><span><span class="t">${esc(r.esito || '')}</span><br><span class="d">${esc(hhmm(r.quando) + ' · ' + r.app + ' · ' + [r.titolo, r.testo].filter(Boolean).join(' — '))}</span></span><span></span></div>`).join('') : '<div class="empty">Ancora nessuna: paga qualcosa con Google Pay e la vedrai qui</div>'}</div>
     <p class="small muted" style="margin:0">Versione ${esc(chiama('versione') || '')}</p>
@@ -333,13 +333,19 @@ V.oggi = (R, oggi) => {
   const neg = R.oggiPuoi < 0, key = R.periodo.key, ov = (ST.periodi || {})[key] || {};
   const sposta = daSpostare(R), manca = sposta.filter(x => !x.fatto);
   const giorniDa = Math.round((ENG.parse(oggi) - ENG.parse(R.periodo.inizio)) / 864e5);
+  // da domani: le spese di oggi sono già tolte e il resto si divide sui giorni che mancano
+  const RD = R.periodo.giorni > 1 ? ENG.calcola(ST, MOVS, ENG.iso(ENG.addDays(ENG.parse(oggi), 1))) : null;
+  const sforo = neg && RD;   // oggi ho sforato: in grande metto quanto posso spendere da domani
+  const grande = sforo ? RD.oggiPuoi : R.oggiPuoi, grandeNeg = grande < 0;
+  const domani = !RD ? ' Domani arriva lo stipendio.' : ` Se oggi non spendi altro, da domani avrai <b>${eur(RD.oggiPuoi)}</b> al giorno.`;
+  const spiega = sforo ? `Oggi hai speso ${eur(R.spesoOggi)}. Quello in più lo tolgo dai prossimi ${RD.periodo.giorni} giorni: fino al ${dBreve(R.periodo.fine)} puoi spendere <b>${eur(RD.oggiPuoi)}</b> al giorno.` : spiegazione(R) + domani;
   let h = `<section class="receipt" aria-label="Quanto puoi spendere oggi">
     <div class="lbl"><span>${esc(dLunga(oggi))}</span><span>${R.periodo.giorni} ${R.periodo.giorni === 1 ? 'giorno' : 'giorni'} allo stipendio</span></div>
-    <div style="margin-top:12px;font-weight:600">${neg ? 'Oggi hai speso più del previsto' : 'Oggi puoi spendere ancora'}</div>
-    <div class="big ${neg ? 'neg' : ''}"><span>${neg ? '−' : ''}${fmt(R.oggiPuoi)}</span><span class="eur">€</span></div>
+    ${sforo ? `<div style="margin-top:12px;font-weight:600"><span class="sforo">Oggi hai sforato di ${eur(-R.oggiPuoi)}</span><br>Da domani puoi spendere</div>` : `<div style="margin-top:12px;font-weight:600">${neg ? 'Oggi hai speso più del previsto' : 'Oggi puoi spendere ancora'}</div>`}
+    <div class="big ${grandeNeg ? 'neg' : ''}"><span>${grandeNeg ? '−' : ''}${fmt(grande)}</span><span class="eur">${sforo ? '€ al giorno' : '€'}</span></div>
     <span class="chip ${R.limite === 'conto' ? 'warn' : ''}">${R.limite === 'conto' ? 'Il limite è il conto' : 'Il limite è il piano del mese'}</span>
     <div class="rows mono">${riga('Sul conto per le spese', eur(R.contoPerSpese))}${riga('Piano del mese, rimasto', eur(R.restoPiano))}${riga('Speso oggi', eur(R.spesoOggi))}</div>
-    <div class="hint">${spiegazione(R)}</div>
+    <div class="hint">${spiega}</div>
   </section>
   <div class="actions"><button class="btn primary" data-act="spesa">＋ Spesa</button>${DICT && !DICT_NO ? `<button class="btn" data-act="detta">${MIC} Detta</button>` : ''}</div>`;
   h += avvisiOggi();
@@ -396,7 +402,8 @@ V.conti = (R, oggi) => {
     <button class="btn sm" data-act="libretto" style="justify-self:start">Aggiorna saldo libretto</button></div>`;
   const rev = (ST.fisse || []).find(f => f.tipo === 'trasferimento');
   if (rev) h += `<div class="card"><header><h2>Revolut</h2><small>spesa con la tua ragazza</small></header><p style="margin:0">Ogni mese ci metti <b>${eur(rev.importo)}</b> per la spesa da mangiare. È già tra le spese fisse.</p>${ANDROID ? '<p class="muted small" style="margin:0">Le ricariche che fai con Google Pay le segno come spese tue. Quello che paghi con la carta Revolut non lo conto: quei soldi sono già usciti dal conto MPS.</p>' : ''}</div>`;
-  h += `<div class="card"><header><h2>Carta di credito MPS</h2><small>la scalano il 15</small></header>
+  h += `<div class="card"><header><h2>Carta di credito MPS</h2><small>conta nel mese dopo</small></header>
+    <p class="muted small" style="margin:0">La banca la scala il 15. Nell'app la conto tra le spese del mese dopo, dal giorno dello stipendio, e la divido su tutto il mese.</p>
     <div class="list">${carta.map(m => `<button class="item" data-act="mov" data-id="${esc(m.id)}"><span class="date"><b>${ENG.parse(m.addebito).getDate()}</b>${MESI[ENG.parse(m.addebito).getMonth()]}</span><span class="t">${esc(m.nota || 'Carta di credito')}</span><span class="a">−${fmt(m.importo)} €</span></button>`).join('') || '<div class="empty">Nessun addebito segnato</div>'}</div>
     <button class="btn sm" data-act="carta" style="justify-self:start">Segna addebito carta</button></div>`;
   return h;
@@ -422,7 +429,7 @@ V.impostazioni = R => {
   return `<div class="card"><header><h2>Budget</h2></header><div class="rows mono">${riga('Stipendio di solito', eur(ST.stipendio))}${riga('Arriva il giorno', ST.giornoStipendio)}${riga('Risparmio ogni mese', eur(ris ? ris.importo : 0))}</div><button class="btn sm" data-act="budget" style="justify-self:start">Modifica</button></div>
   <div class="card"><header><h2>Come funziona</h2></header>
     <p style="margin:0">Ogni giorno l'app ti dice quanto puoi spendere fino al prossimo stipendio. Guarda due cose e prende la più bassa: il <b>piano del mese</b> (stipendio meno spese fisse, risparmio e quota delle scadenze) e i <b>soldi veri sul conto</b> (ultimo saldo meno le uscite già in arrivo).</p>
-    ${ANDROID ? '<p class="muted small" style="margin:0">Le spese pagate con Google Pay si segnano da sole; le altre le segni tu con ＋ Spesa o a voce. I dati restano su questo telefono: ogni tanto fai un backup.</p>' : '<p class="muted small" style="margin:0">Le spese le segni tu con ＋ Spesa o a voce. La lettura automatica delle notifiche della banca c\'è solo nell\'app Android. I dati sono salvati nel tuo account Claude: li vedi uguali dal telefono e dal PC.</p>'}</div>
+    ${ANDROID ? '<p class="muted small" style="margin:0">Le spese pagate con Google Pay si segnano da sole; quelle con la carta o i prelievi le segno quando arriva la mail di MPS; le altre le segni tu con ＋ Spesa o a voce. Se un giorno sfori, quello che hai speso in più lo tolgo dai giorni dopo. La carta di credito la conto nel mese dopo. I dati restano su questo telefono: ogni tanto fai un backup.</p>' : '<p class="muted small" style="margin:0">Le spese le segni tu con ＋ Spesa o a voce. La lettura automatica delle notifiche della banca c\'è solo nell\'app Android. I dati sono salvati nel tuo account Claude: li vedi uguali dal telefono e dal PC.</p>'}</div>
   ${ANDROID ? cardLettura() : ''}
   <div class="card"><header><h2>Backup</h2></header><p class="muted small" style="margin:0">Una copia di tutti i dati in un file, da tenere da parte.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn sm" data-act="esporta">Esporta backup</button>${ANDROID ? '<button class="btn sm" data-act="importaFile">Importa da un file</button><button class="btn sm" data-act="incolla">Incolla il backup</button>' : '<label class="btn sm" for="imp">Importa backup</label><input type="file" id="imp" accept=".json,application/json" hidden>'}</div></div>
@@ -473,7 +480,7 @@ const ACT = {
   saldo: () => formNumero('Aggiorna saldo', 'Saldo disponibile adesso (dall\'app MPS)', ST.saldo.importo, 'Apri l\'app MPS e copia il saldo disponibile: l\'app ripartirà da lì.', v => { const s = clone(ST); s.saldo = { importo: v, data: oggiISO(), ts: Date.now(), fonte: 'manuale' }; salvaStato(s, 'Saldo aggiornato'); }),
   libretto: () => formNumero('Saldo del libretto', 'Quanto c\'è sul libretto adesso', ST.libretto ? ST.libretto.saldo : 0, '', v => { const s = clone(ST); s.libretto = { saldo: v, data: oggiISO() }; salvaStato(s, 'Libretto aggiornato'); }),
   stipendio: () => { const R = ENG.calcola(ST, MOVS, oggiISO()); formNumero('Stipendio arrivato', 'Quanto è arrivato', ST.stipendio, 'Lo trovi nei movimenti dell\'app MPS.', v => { ST = conPeriodo(R.periodo.key, p => { p.stipendio = v; }); salvaStato(ST, 'Stipendio segnato'); salvaMov({ id: nuovoId(), data: R.periodo.inizio, importo: v, tipo: 'entrata', categoria: 'stipendio', nota: 'Stipendio', creato: Date.now() }); }); },
-  carta: () => formMov(null, { categoria: 'carta', nota: 'Carta di credito', addebito: prossimo15() }),
+  carta: () => { const R = ENG.calcola(ST, MOVS, oggiISO()); formMov(null, { categoria: 'carta', nota: 'Carta di credito', data: R.periodo.prossimo, addebito: R.periodo.prossimo }); },   // la carta conta nel mese dopo
   budget: () => formBudget(),
   esporta: () => esporta(),
   importaFile: () => { if (ANDROID) chiama('scegliFile'); else { const i = $('imp'); if (i) i.click(); } },

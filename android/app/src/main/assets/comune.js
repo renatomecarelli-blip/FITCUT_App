@@ -74,15 +74,21 @@ const FIN = (() => {
   };
   let adesso = () => Date.now();   // nelle prove si può spostare l'orologio
   function calcolaSicuro(ST, MOVS, giorno) { try { return ST && ST.saldo ? ENG.calcola(ST, MOVS, giorno || ENG.iso(new Date(adesso()))) : null; } catch (e) { return null; } }
-  function frasePuoi(R) {
+  // quanto si potrà spendere da domani, con le spese di oggi già tolte (null se domani arriva lo stipendio)
+  function domaniSicuro(ST, MOVS, R) {
+    if (!R || R.periodo.giorni <= 1) return null;
+    return calcolaSicuro(ST, MOVS, ENG.iso(ENG.addDays(new Date(adesso()), 1)));
+  }
+  function frasePuoi(R, RD) {
     if (!R) return 'Apri l\'app per vedere quanto puoi spendere.';
     const resto = Math.min(R.restoPiano, R.contoPerSpese);
+    if (R.oggiPuoi < 0 && RD) return 'Oggi sei oltre di ' + eur(-R.oggiPuoi) + '. Da domani puoi spendere ' + eur(RD.oggiPuoi) + ' al giorno.';
     return (R.oggiPuoi >= 0 ? 'Oggi puoi spendere ancora ' + eur(R.oggiPuoi) + '.' : 'Oggi sei oltre di ' + eur(-R.oggiPuoi) + '.') + ' Fino allo stipendio: ' + eur(resto) + '.';
   }
   function avvisoMov(m, ST, MOVS) {
     if (m.esclusa) return { titolo: fmt(m.importo) + ' € con Revolut · ' + m.nota, testo: 'Non la conto: i soldi su Revolut sono già tra le spese.', canale: 'info' };
-    const titolo = (m.tipo === 'entrata' ? '+' : '−') + fmt(m.importo) + ' € · ' + m.nota;
-    return { titolo, testo: frasePuoi(calcolaSicuro(ST, MOVS)), canale: 'spese' };
+    const titolo = (m.tipo === 'entrata' ? '+' : '−') + fmt(m.importo) + ' € · ' + m.nota, R = calcolaSicuro(ST, MOVS);
+    return { titolo, testo: frasePuoi(R, R && R.oggiPuoi < 0 ? domaniSicuro(ST, MOVS, R) : null), canale: 'spese' };
   }
   const vicino = (a, b) => Math.abs(num(a) - num(b)) <= Math.max(0.5, num(a) * 0.03);
   function daControllare(ST, voce) {
@@ -137,7 +143,21 @@ const FIN = (() => {
       if (c) {
         const st = clone(ST), key = ENG.periodo(d, st.giornoStipendio || 1).key;
         st.periodi = st.periodi || {}; const p = st.periodi[key] = st.periodi[key] || {}; p.fatti = p.fatti || {}; p.fatti[c.id] = true;
-        return { stato: st, esito: 'Addebito ' + eur(v) + ': è «' + c.nome + '», già in lista' };
+        const r = { stato: st, esito: 'Addebito ' + eur(v) + ': è «' + c.nome + '», già in lista' };
+        // carta di credito: resta nelle spese del mese che hai scelto, ma per i soldi sul conto vale il giorno vero in cui l'hanno scalata
+        if (c.mov && c.mov.addebito !== isoDi(quando)) r.movs = [Object.assign({}, c.mov, { addebito: isoDi(quando) })];
+        return r;
+      }
+      // pagamento già segnato (Google Pay, PayPal o a mano): lo riconosco e non lo conto due volte
+      const gia = giaSegnata(MOVS, v, quando);
+      if (gia) return { movs: [Object.assign({}, gia, { banca: true })], esito: 'Addebito ' + eur(v) + ': spesa già segnata (' + (gia.nota || 'spesa') + ')' };
+      // pagamento con la carta o prelievo che non avevo: lo segno io
+      const prel = /prelev|prelievo|\batm\b/i.test(corpo), pos = !prel && /mastercard|maestro|\bpos\b/i.test(corpo);
+      if (prel || pos) {
+        const dm = /data addebito\D{0,5}(\d{1,2})\/(\d{1,2})\/(\d{4})/i.exec(corpo);
+        const data = dm ? dm[3] + '-' + dm[2].padStart(2, '0') + '-' + dm[1].padStart(2, '0') : isoDi(quando);
+        const m = { id: nuovoId('b', quando), data, importo: v, tipo: 'spesa', categoria: 'altro', nota: prel ? 'Prelievo contanti' : 'Pagamento con carta', fonte: 'mail', banca: true, creato: quando };
+        return { movs: [m], esito: (prel ? 'Prelievo' : 'Pagamento con carta') + ' segnato dalla mail: ' + eur(v), avviso: avvisoMov(m, ST, MOVS.concat([m])) };
       }
       const st = daControllare(ST, { id: nuovoId('c', quando), tipo: 'addebito', data: isoDi(quando), importo: v, nota: 'Addebito MPS', testo: corpo.replace(/\s+/g, ' ').slice(0, 160), quando });
       if (!st) return { esito: 'Addebito già da controllare' };
@@ -184,8 +204,16 @@ const FIN = (() => {
       if (vicino(imp, v) && distanza(f.giorno) <= 7) return { id: f.id, nome: f.nome };
     }
     for (const s of ST.scadenze || []) if (vicino(s.importo, v) && distanza(s.giorno, s.mesi) <= 10) return { id: s.id, nome: s.nome };
-    for (const m of MOVS) if (m.tipo === 'spesa' && m.addebito && vicino(m.importo, v) && Math.abs(ENG.parse(m.addebito) - d) / 864e5 <= 7) return { id: m.id, nome: m.nota || 'Carta di credito' };
+    for (const m of MOVS) if (m.tipo === 'spesa' && m.addebito && vicino(m.importo, v) && Math.abs(ENG.parse(m.addebito) - d) / 864e5 <= 7) return { id: m.id, nome: m.nota || 'Carta di credito', mov: m };
     return null;
+  }
+  // la spesa già segnata che corrisponde a un pagamento arrivato per mail: stesso importo, negli ultimi 6 giorni, non ancora abbinata
+  function giaSegnata(MOVS, v, quando) {
+    const c = MOVS.filter(m => m.tipo === 'spesa' && !m.esclusa && !m.banca && !m.addebito && Math.abs(num(m.importo) - v) < 0.005)
+      .map(m => ({ m, t: num(m.creato) || ENG.parse(m.data).getTime() }))
+      .filter(x => x.t <= quando + 36e5 && quando - x.t < 6 * 864e5)
+      .sort((a, b) => a.t - b.t);
+    return c.length ? c[0].m : null;
   }
   // 🅿️ PayPal (mail o app): "Ricevuta del tuo pagamento a favore di Meta…", "Hai inviato 12,00 € a Davide"
   function paypal(ogg, corpo, ST, MOVS, quando) {
